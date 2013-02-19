@@ -1,0 +1,28 @@
+{
+  "name": "polygon.js",
+  "version": "0.0.1",
+  "description": "utility for working with polygons (arrays of vec2s)",
+  "main": "polygon.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "vec2": "~1.0.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "mocha test/test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/tmpvar/polygon.js.git"
+  },
+  "keywords": [
+    "polygon",
+    "vec2",
+    "geometry",
+    "2d"
+  ],
+  "author": "Elijah Insua <tmpvar@gmail.com>",
+  "license": "MIT"
+}
