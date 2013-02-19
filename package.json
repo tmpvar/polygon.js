@@ -1,5 +1,5 @@
 {
-  "name": "polygon.js",
+  "name": "polygon",
   "version": "0.0.1",
   "description": "utility for working with polygons (arrays of vec2s)",
   "main": "polygon.js",
