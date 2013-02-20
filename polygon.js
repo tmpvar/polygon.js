@@ -79,9 +79,23 @@ Polygon.prototype = {
       });
     });
 
-    return points.sort(function(a, b) {
+    var obj = points.sort(function(a, b) {
       return a.distance-b.distance;
-    })[0].point;
+    })[0];
+
+    var point = obj.point;
+    point.distanceToCurrent = obj.distance;
+
+    this.each(function(prev, current, next) {
+      if (point.equal(current)) {
+        point.current = current;
+        point.prev = prev;
+        point.next = next;
+        return false;
+      }
+    });
+
+    return point;
   }
 };
 
