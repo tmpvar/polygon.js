@@ -20,6 +20,21 @@ Polygon.prototype = {
         break;
       }
     }
+    return this;
+  },
+
+  dedupe : function() {
+    var seen = {};
+    // TODO: make this a tree
+    this.points = this.points.filter(function(a) {
+      var key = a.x + ':' + a.y;
+      if (!seen[key]) {
+        seen[key] = true;
+        return true;
+      }
+    });
+
+    return this;
   },
 
   winding : function() {
@@ -32,6 +47,7 @@ Polygon.prototype = {
     if (winding !== cw) {
       this.points.reverse();
     }
+    return this;
   },
 
   area : function() {
