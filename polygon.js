@@ -1,5 +1,5 @@
 var Vec2 = require('vec2');
-
+var segseg = require('segseg');
 
 function Polygon(points) {
   if (!(this instanceof Polygon)) {
@@ -112,6 +112,19 @@ Polygon.prototype = {
     });
 
     return point;
+  },
+
+  containsPoint : function(point) {
+    var type=0, left = Vec2(0, point.y), i;
+
+    this.each(function(prev, current, next) {
+      i = segseg(left, point, current, next);
+      if (i && i!==true) {
+        type++;
+      }
+    });
+
+    return !!(type%2);
   }
 };
 

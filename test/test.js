@@ -188,4 +188,35 @@ describe('Polygon', function() {
       assert.equal(point.distanceToCurrent, 100);
     });
   });
+
+  describe('#dedupe', function() {
+    it('should remove dupes', function() {
+      assert.equal(Polygon([
+        Vec2(10, 10),
+        Vec2(10, 10),
+        Vec2(20, 10),
+        Vec2(20, 20),
+      ]).dedupe().points.length, 3)
+    })
+  });
+
+  describe('#containsPoint', function() {
+    it('should return true when a vec is inside of the poly', function() {
+      assert.ok(Polygon([
+        Vec2(0,0),
+        Vec2(10,0),
+        Vec2(10,10),
+        Vec2(0,10)
+      ]).containsPoint(Vec2(5,5)));
+    });
+
+    it('should return false when a vec is outside of a poly', function() {
+      assert.ok(!Polygon([
+        Vec2(0,0),
+        Vec2(10,0),
+        Vec2(10,10),
+        Vec2(0,10)
+      ]).containsPoint(Vec2(50,5)));
+    });
+  });
 });
