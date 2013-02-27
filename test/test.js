@@ -228,5 +228,19 @@ describe('Polygon', function() {
 
       assert.ok(!p.containsPoint(Vec2(520, 125)));
     });
+
+    it('should work even if entering and exiting through a single point', function() {
+      var p = Polygon([
+        Vec2(300, 300),
+        Vec2(320, 350),
+        Vec2(300, 400),
+        Vec2(400, 400),
+        Vec2(450, 450),
+        Vec2(400, 200),
+        Vec2(400, 100)
+      ], 20);
+
+      assert.ok(!p.containsPoint(Vec2(400, 100)));
+    });
   });
 });

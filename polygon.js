@@ -122,7 +122,7 @@ Polygon.prototype = {
       if (i && i!==true) {
         i = Vec2(i);
         var key = i.x + ':' + i.y;
-        if (!seen[key]) {
+        if (!seen[key] || type%2) {
           seen[key] = true;
           type++;
         }
