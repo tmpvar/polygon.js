@@ -218,5 +218,15 @@ describe('Polygon', function() {
         Vec2(0,10)
       ]).containsPoint(Vec2(50,5)));
     });
+
+    it('should work even if exiting through a single point', function() {
+      var p = Polygon([
+        Vec2(50, 50),
+        Vec2(50, 200),
+        Vec2(500, 125)
+      ]);
+
+      assert.ok(!p.containsPoint(Vec2(520, 125)));
+    });
   });
 });
