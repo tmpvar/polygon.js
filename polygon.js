@@ -115,21 +115,25 @@ Polygon.prototype = {
   },
 
   containsPoint : function(point) {
-    var type=0, left = Vec2(0, point.y), i, seen = {};
+    var type=0,
+        // Avoid intersections with points as they
+        // cause weird results.
+
+        // TODO: this is prone to errors when the x is < -1e10
+        //       calculating the x off of the AABB would be prefered
+        left = Vec2(0, point.y + .00001),
+        seen = {};
+
 
     this.each(function(prev, current, next) {
-      i = segseg(left, point, current, next);
+      var i = segseg(left, point, current, next);
       if (i && i!==true) {
-        i = Vec2(i);
-        var key = i.x + ':' + i.y;
-        if (!seen[key] || type%2) {
-          seen[key] = true;
-          type++;
-        }
+        type++;
       }
     });
 
-    return !!(type%2);
+
+    return type%2 === 1;
   }
 };
 
