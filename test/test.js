@@ -342,4 +342,28 @@ describe('Polygon', function() {
       });
     });
   });
+
+  describe('#aabb', function() {
+    it('should return a box that contains all of the points', function() {
+
+      var p = Polygon([
+        Vec2(300, 300),
+        Vec2(320, 350),
+        Vec2(300, 400),
+        Vec2(400, 400),
+        Vec2(450, 450),
+        Vec2(400, 200),
+        Vec2(400, 100)
+      ], 20);
+
+      var aabb = p.aabb();
+      assert.equal(aabb.x, 300);
+      assert.equal(aabb.y, 100);
+      assert.equal(aabb.w, 150);
+      assert.equal(aabb.h, 350);
+
+    });
+
+
+  });
 });

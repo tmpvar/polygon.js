@@ -152,6 +152,38 @@ Polygon.prototype = {
     return type%2 === 1;
   },
 
+  aabb : function() {
+    var xmin, xmax, ymax, ymin;
+    xmax = xmin = this.points[1].x;
+    ymax = ymin = this.points[1].y;
+
+    this.each(function(p, c) {
+      if (c.x > xmax) {
+        xmax = c.x;
+      }
+
+      if (c.x < xmin) {
+        xmin = c.x;
+      }
+
+      if (c.y > ymax) {
+        ymax = c.y;
+      }
+
+      if (c.y < ymin) {
+        ymin = c.y;
+      }
+    });
+
+    return {
+      x : xmin,
+      y : ymin,
+      w : xmax - xmin,
+      h : ymax - ymin
+    };
+  },
+
+
   clone : function() {
     var points = [];
     this.each(function(p, c) {
