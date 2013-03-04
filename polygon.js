@@ -150,6 +150,14 @@ Polygon.prototype = {
 
 
     return type%2 === 1;
+  },
+
+  clone : function() {
+    var points = [];
+    this.each(function(p, c) {
+      points.push(c.clone());
+    });
+    return new Polygon(points);
   }
 };
 

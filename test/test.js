@@ -321,4 +321,25 @@ describe('Polygon', function() {
 
     });
   });
+
+  describe('#clone', function() {
+    it('should clone the object and all vecs', function() {
+      var p = Polygon([
+        Vec2(0,0),
+        Vec2(1, 1),
+        Vec2(3, 3),
+        Vec2(0,0),
+      ]);
+
+      var p2 = p.clone();
+
+      assert.equal(p.length, p2.length);
+      assert.deepEqual(p, p2);
+      p2.each(function(prev, c, n, idx) {
+        assert.equal(c.x, p.points[idx].x);
+        assert.equal(c.y, p.points[idx].y);
+        assert.ok(c !== p.points[idx]);
+      });
+    });
+  });
 });
