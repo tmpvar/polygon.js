@@ -267,4 +267,58 @@ describe('Polygon', function() {
     });
 
   });
+
+  describe('#clean', function() {
+    it('should clean identical points occurring right after each other', function() {
+
+      var p = Polygon([
+        Vec2(0,0),
+        Vec2(0,0),
+        Vec2(1, 1),
+        Vec2(3, 3),
+      ]);
+
+      p.clean();
+
+      assert.equal(p.points.length, 3);
+      assert.ok(p.points[0].equal(0, 0));
+      assert.ok(p.points[1].equal(1, 1));
+      assert.ok(p.points[2].equal(3, 3));
+
+    });
+
+    it('should leave identical points that are not immediately connected', function() {
+      var p = Polygon([
+        Vec2(0,0),
+        Vec2(1, 1),
+        Vec2(0,0),
+        Vec2(3, 3),
+      ]);
+
+      p.clean();
+
+      assert.equal(p.points.length, 4);
+      assert.ok(p.points[0].equal(0, 0));
+      assert.ok(p.points[1].equal(1, 1));
+      assert.ok(p.points[2].equal(0, 0));
+      assert.ok(p.points[3].equal(3, 3));
+    });
+
+    it('should remove the loop if exists', function() {
+      var p = Polygon([
+        Vec2(0,0),
+        Vec2(1, 1),
+        Vec2(3, 3),
+        Vec2(0,0),
+      ]);
+
+      p.clean();
+
+      assert.equal(p.points.length, 3);
+      assert.ok(p.points[0].equal(1, 1));
+      assert.ok(p.points[1].equal(3, 3));
+      assert.ok(p.points[2].equal(0, 0));
+
+    });
+  });
 });

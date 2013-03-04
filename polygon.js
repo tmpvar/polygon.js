@@ -9,7 +9,6 @@ function Polygon(points) {
   this.points = points || [];
 }
 
-
 Polygon.prototype = {
 
   each : function(fn) {
@@ -32,6 +31,23 @@ Polygon.prototype = {
         seen[key] = true;
         return true;
       }
+    });
+
+    return this;
+  },
+
+  // Remove identical points occurring one after the other
+  clean : function() {
+    var last = this.points[this.points.length-1];
+
+    this.points = this.points.filter(function(a) {
+      var ret = false;
+      if (!last.equal(a)) {
+        ret = true;
+      }
+
+      last = a;
+      return ret;
     });
 
     return this;
