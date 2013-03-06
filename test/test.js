@@ -361,9 +361,47 @@ describe('Polygon', function() {
       assert.equal(aabb.y, 100);
       assert.equal(aabb.w, 150);
       assert.equal(aabb.h, 350);
-
     });
+  });
 
+  describe('#containsPolygon', function() {
+
+    it('should return true if the subject polygon is completely contained', function() {
+      var p = new Polygon([
+        Vec2(0,0),
+        Vec2(100,0),
+        Vec2(100,100),
+        Vec2(0,100)
+      ]);
+
+      var p2 = new Polygon([
+        Vec2(10,10),
+        Vec2(90,10),
+        Vec2(90,90),
+        Vec2(10,90)
+      ]);
+
+      assert.ok(p.containsPolygon(p2))
+    })
+
+    it('should return false if the subject polygon is not completely contained', function() {
+      var p = new Polygon([
+        Vec2(0,0),
+        Vec2(100,0),
+        Vec2(100,100),
+        Vec2(0,100)
+      ]);
+
+      var p2 = new Polygon([
+        Vec2(-10,-10),
+        Vec2(90,10),
+        Vec2(90,90),
+        Vec2(10,90)
+      ]);
+
+      assert.ok(!p.containsPolygon(p2))
+    })
 
   });
+
 });

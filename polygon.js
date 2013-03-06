@@ -152,6 +152,19 @@ Polygon.prototype = {
     return type%2 === 1;
   },
 
+  containsPolygon : function(subject) {
+    var ret = true, that = this;
+    subject.each(function(p, c, n) {
+      if (!that.containsPoint(c)) {
+        console.log("boo", c.toArray(), that.containsPoint(c))
+        ret = false;
+        return false;
+      }
+    });
+    return ret;
+  },
+
+
   aabb : function() {
     var xmin, xmax, ymax, ymin;
     xmax = xmin = this.points[1].x;
