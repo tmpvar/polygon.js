@@ -1,5 +1,15 @@
 var Vec2 = require('vec2');
 var segseg = require('segseg');
+var PI = Math.PI;
+var TAU = PI*2;
+var toTAU = function(rads) {
+  if (rads<0) {
+    rads += TAU;
+  }
+
+  return rads;
+};
+
 
 function Polygon(points) {
   if (!(this instanceof Polygon)) {
@@ -156,7 +166,6 @@ Polygon.prototype = {
     var ret = true, that = this;
     subject.each(function(p, c, n) {
       if (!that.containsPoint(c)) {
-        console.log("boo", c.toArray(), that.containsPoint(c))
         ret = false;
         return false;
       }
@@ -196,6 +205,51 @@ Polygon.prototype = {
     };
   },
 
+  offset : function(delta) {
+
+    var ret = [],
+        last = null,
+        bisectors = [];
+
+    // Compute bisectors
+    this.each(function(prev, current, next, idx) {
+      var e1 = current.subtract(prev, true).normalize();
+      var e2 = current.subtract(next, true).normalize();
+      var length = delta / Math.sin(Math.acos(e1.dot(e2))/2);
+
+      if (delta > 0) {
+        length = -length;
+      }
+
+      var cornerAngle = toTAU(current.subtract(prev, true).angleTo(next.subtract(current, true)));
+      var angleToCorner = toTAU(current.subtract(prev, true).angleTo(Vec2(1, 0)));
+      var bisector = Vec2(length, 0).rotate(TAU/4 + cornerAngle/2 - angleToCorner);
+
+      if ((delta < 0 && cornerAngle - PI < 0) ||
+          (delta > 0 && cornerAngle - PI > 0))
+      {
+        bisector.add(current);
+      } else {
+        bisector = current.subtract(bisector, true);
+      }
+      bisector.cornerAngle = cornerAngle;
+      current.bisector = bisector;
+      bisector.point = current;
+      ret.push(bisector);
+    });
+
+    return Polygon(ret);
+  },
+
+  get length() {
+    return this.points.length
+  },
+
+  point : function(index) {
+    if (index >= 0 && index < this.points.length) {
+      return this.points[index];
+    }
+  },
 
   clone : function() {
     var points = [];

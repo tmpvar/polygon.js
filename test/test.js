@@ -400,8 +400,21 @@ describe('Polygon', function() {
       ]);
 
       assert.ok(!p.containsPolygon(p2))
-    })
-
+    });
   });
 
+  describe('#offset', function() {
+    var p = Polygon([
+      Vec2(10, 10),
+      Vec2(10, 100),
+      Vec2(100, 100),
+      Vec2(100, 10)
+    ]).rewind(true);
+
+    var offset = p.offset(-10);
+    offset.each(function(p, c) {
+      assert.equal(c.distance(c.point), 14.142135623730951);
+    });
+
+  });
 });
