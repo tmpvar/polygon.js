@@ -41,10 +41,10 @@ Polygon.prototype = {
     return this.points[el];
   },
 
-  dedupe : function() {
+  dedupe : function(returnNew) {
     var seen = {};
     // TODO: make this a tree
-    this.points = this.points.filter(function(a) {
+    var points = this.points.filter(function(a) {
       var key = a.x + ':' + a.y;
       if (!seen[key]) {
         seen[key] = true;
@@ -52,7 +52,12 @@ Polygon.prototype = {
       }
     });
 
-    return this;
+    if (returnNew) {
+      return new Polygon(points);
+    } else {
+      this.points = points;
+      return this;
+    }
   },
 
   remove : function(vec) {
@@ -262,8 +267,6 @@ Polygon.prototype = {
       bisector.point = current;
       raw.push(bisector);
     });
-
-
     
     Polygon(raw).each(function(p, c, n, i) {
 

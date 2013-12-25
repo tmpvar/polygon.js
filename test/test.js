@@ -197,7 +197,19 @@ describe('Polygon', function() {
         Vec2(20, 10),
         Vec2(20, 20),
       ]).dedupe().points.length, 3)
-    })
+    });
+
+    it('should return a new instance if specified', function() {
+      p = Polygon([
+        Vec2(10, 10),
+        Vec2(10, 10),
+        Vec2(20, 10),
+        Vec2(20, 20),
+      ]);
+      var p2 = p.dedupe(true);
+      assert.equal(3, p2.points.length);
+      assert.equal(4, p.points.length);
+    });
   });
 
   describe('#containsPoint', function() {
@@ -415,6 +427,23 @@ describe('Polygon', function() {
     offset.each(function(p, c) {
       assert.equal(c.distance(c.point), 14.142135623730951);
     });
-
   });
+
+  describe('#point', function() {
+    it('should return the index specified', function() {
+      var p = Polygon([
+        Vec2(10, 10),
+        Vec2(10, 100),
+        Vec2(100, 100),
+        Vec2(100, 10)
+      ]);
+
+      assert.ok(p.point(0).equal(Vec2(10, 10)));
+      assert.ok(p.point(-1).equal(Vec2(100, 10)));
+      assert.ok(p.point(4).equal(Vec2(10, 10)));
+      assert.ok(p.point(8).equal(Vec2(10, 10)));
+      assert.ok(p.point(-4).equal(Vec2(10, 10)));
+    });
+  });
+
 });
