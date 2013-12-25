@@ -232,7 +232,8 @@ Polygon.prototype = {
     var raw = [],
         ret = [],
         last = null,
-        bisectors = [];
+        bisectors = [],
+        rightVec = Vec2(1, 0);
 
     // Compute bisectors
     this.each(function(prev, current, next, idx) {
@@ -242,9 +243,12 @@ Polygon.prototype = {
       var length = delta / Math.sin(Math.acos(e1.dot(e2))/2);
 
       length = -length;
+      var angleToZero = rightVec.angleTo(current.subtract(prev, true).normalize());
 
-      var angleToZero = lineRadsFromZero(prev, current);
-      var rads = lineIntersectionRads(prev, current, next);
+      var rads = prev.subtract(current, true).normalize().angleTo(
+        next.subtract(current, true).normalize()
+      )
+
       var bisector = Vec2(length, 0).rotate(angleToZero - rads/2);
 
       if (ecross < 0)
@@ -424,6 +428,6 @@ Polygon.prototype = {
   }
 };
 
-if (typeof module !== undefined) {
+if (typeof module !== 'undefined') {
   module.exports = Polygon;
 }
