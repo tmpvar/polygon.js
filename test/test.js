@@ -330,8 +330,21 @@ describe('Polygon', function() {
       assert.ok(p.points[0].equal(1, 1));
       assert.ok(p.points[1].equal(3, 3));
       assert.ok(p.points[2].equal(0, 0));
-
     });
+
+    it('should return a new polygon if requested', function() {
+      var p = Polygon([
+        Vec2(0,0),
+        Vec2(0,0),
+        Vec2(1, 1),
+        Vec2(3, 3),
+      ]);
+
+      var p2 = p.clean(true);
+      assert.equal(3, p2.points.length);
+      assert.equal(4, p.points.length);
+    })
+
   });
 
   describe('#clone', function() {

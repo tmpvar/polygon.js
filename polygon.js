@@ -67,10 +67,10 @@ Polygon.prototype = {
   },
 
   // Remove identical points occurring one after the other
-  clean : function() {
+  clean : function(returnNew) {
     var last = this.points[this.points.length-1];
 
-    this.points = this.points.filter(function(a) {
+    var points = this.points.filter(function(a) {
       var ret = false;
       if (!last.equal(a)) {
         ret = true;
@@ -80,7 +80,12 @@ Polygon.prototype = {
       return ret;
     });
 
-    return this;
+    if (returnNew) {
+      return new Polygon(points);
+    } else {
+      this.points = points
+      return this;
+    }
   },
 
   winding : function() {
