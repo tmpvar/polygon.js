@@ -25,11 +25,20 @@ Polygon.prototype = {
     for (var i = 0; i<this.points.length; i++) {
       var prev = i>0 ? this.points[i-1] : this.points[this.points.length-1];
       var next = i<this.points.length-1 ? this.points[i+1] : this.points[0];
-      if (fn(prev, this.points[i], next, i) === false) {
+      if (fn.call(this, prev, this.points[i], next, i) === false) {
         break;
       }
     }
     return this;
+  },
+
+  point : function(idx) {
+    var el = idx%(this.points.length);
+    if (el<0) {
+      el = this.points.length + el;
+    }
+
+    return this.points[el];
   },
 
   dedupe : function() {
@@ -44,6 +53,12 @@ Polygon.prototype = {
     });
 
     return this;
+  },
+
+  remove : function(vec) {
+    this.points = this.points.filter(function(point) {
+      return point!==vec;
+    });
   },
 
   // Remove identical points occurring one after the other
@@ -140,6 +155,13 @@ Polygon.prototype = {
     return point;
   },
 
+  scale : function(amount) {
+    this.each(function(p, c) {
+      c.multiply(amount);
+    });
+    return this;
+  },
+
   containsPoint : function(point) {
     var type=0,
         // Avoid intersections with points as they
@@ -207,7 +229,8 @@ Polygon.prototype = {
 
   offset : function(delta) {
 
-    var ret = [],
+    var raw = [],
+        ret = [],
         last = null,
         bisectors = [];
 
@@ -215,40 +238,181 @@ Polygon.prototype = {
     this.each(function(prev, current, next, idx) {
       var e1 = current.subtract(prev, true).normalize();
       var e2 = current.subtract(next, true).normalize();
+      var ecross = e1.perpDot(e2);
       var length = delta / Math.sin(Math.acos(e1.dot(e2))/2);
 
-      if (delta > 0) {
-        length = -length;
-      }
+      length = -length;
 
-      var cornerAngle = toTAU(current.subtract(prev, true).angleTo(next.subtract(current, true)));
-      var angleToCorner = toTAU(current.subtract(prev, true).angleTo(Vec2(1, 0)));
-      var bisector = Vec2(length, 0).rotate(TAU/4 + cornerAngle/2 - angleToCorner);
+      var angleToZero = lineRadsFromZero(prev, current);
+      var rads = lineIntersectionRads(prev, current, next);
+      var bisector = Vec2(length, 0).rotate(angleToZero - rads/2);
 
-      if ((delta < 0 && cornerAngle - PI < 0) ||
-          (delta > 0 && cornerAngle - PI > 0))
+      if (ecross < 0)
       {
         bisector.add(current);
       } else {
         bisector = current.subtract(bisector, true);
       }
-      bisector.cornerAngle = cornerAngle;
+      bisector.cornerAngle = rads;
       current.bisector = bisector;
       bisector.point = current;
-      ret.push(bisector);
+      raw.push(bisector);
+    });
+
+
+    
+    Polygon(raw).each(function(p, c, n, i) {
+
+      var isect = segseg(c, c.point, n, n.point);
+
+      if (isect && isect !== true) {
+        // This means that the offset is self-intersecting
+        // find where and use that as the current vec instead
+
+        var isect2 = segseg(
+          p,
+          c,
+          n,
+          this.point(i+2)
+        );
+
+        if (isect2 && isect2 !== false) {
+          isect = isect2;
+        }
+
+        this.remove(c);
+        c.set(isect[0], isect[1]);
+
+      }
+
+      ret.push(c)
     });
 
     return Polygon(ret);
+
+  },
+
+  line : function(idx) {
+    var end = (idx === this.points.length-1) ? 
+              this.points[0] :
+              this.points[idx+1];
+
+    return [this.points[idx], end];
+  },
+
+  lines : function(fn) {
+    var idx = 0;
+    this.each(function(p, start, end) {
+      fn(start, end, idx++);
+    });
+  },
+
+  selfIntersections : function() {
+    var ret = [];
+
+    // TODO: use a faster algorithm. Bentley–Ottmann is a good first choice
+    this.lines(function(s, e, i) {
+      this.lines(function(s2, e2, i2) {
+
+        if (!s2.equal(e) && !s2.equal(s) && !e2.equal(s) && !e2.equal(e) && i+1 < i2) {
+          var isect = segseg(s, e, s2, e2);
+          // self-intersection
+          if (isect && isect !== true) {
+            var vec = Vec2.fromArray(isect);
+            // TODO: wow, this is inneficient but is crucial for creating the
+            //       tree later on.
+            vec.s = i + (s.subtract(vec, true).length() / s.subtract(e, true).length())
+            vec.b = i2 + (s2.subtract(vec, true).length() / s2.subtract(e2, true).length())
+
+            ret.push(vec);
+          }
+        }
+      });
+    }.bind(this));
+    return Polygon(ret);
+  },
+
+  pruneSelfIntersections : function() {
+    var selfIntersections = this.selfIntersections();
+
+    var belongTo = function(s1, b1, s2, b2) {
+      return s1 > s2 && b1 < b2
+    }
+
+    var contain = function(s1, b1, s2, b2) {
+      return s1 < s2 && b1 > b2;
+    }
+
+    var interfere = function(s1, b1, s2, b2) {
+      return (s1 < s2 && s2 < b1 && b2 > b1) || (s2 < b1 && b1 < b2 && s1 < s2); 
+    }
+
+    function Node(value) {
+      this.value = value;
+      this.children = [];
+    }
+
+    // TODO: create tree based on relationship operations
+
+    var rootVec = this.points[0].clone();
+    rootVec.s = 0;
+    rootVec.b = (this.points.length-1) + 0.99;
+    var root = new Node(rootVec);
+    var last = root;
+    var tree = [rootVec];
+    selfIntersections.each(function(p, c, n) {
+      console.log(
+        'belongTo:', belongTo(last.s, last.b, c.s, c.b),
+        'contain:', contain(last.s, last.b, c.s, c.b),
+        'interfere:', interfere(last.s, last.b, c.s, c.b)
+      );
+
+      //if (!contain(1-last.s, 1-last.b, 1-c.s, 1-c.b)) {
+        tree.push(c);
+        last = c;
+      //} else {
+        // collect under children
+      //}
+
+    });
+
+    var ret = [];
+
+    if (tree.length < 2) {
+      return ret;
+    }
+
+    tree.sort(function(a, b) {
+      return a.s - b.s;
+    });
+
+    for (var i=0; i<tree.length; i+=2) {
+      var poly = [];
+      var next = (i<tree.length-1) ? tree[i+1] : null;
+
+     if (next) {
+
+        // collect up to the next isect
+        for (var j = Math.floor(tree[i].s); j<=Math.floor(next.s); j++) {
+          poly.push(this.points[j]);
+        }
+
+        poly.push(next);
+        poly.push(this.points[Math.floor(tree[i].b)]);
+      } else {
+        poly.push(tree[i])
+        for (var k = Math.floor(tree[i].s+1); k<=Math.floor(tree[i].b); k++) {
+          poly.push(this.points[k]);
+        }
+      }
+
+      ret.push(new Polygon(poly));
+    }
+    return ret;
   },
 
   get length() {
     return this.points.length
-  },
-
-  point : function(index) {
-    if (index >= 0 && index < this.points.length) {
-      return this.points[index];
-    }
   },
 
   clone : function() {
@@ -260,4 +424,6 @@ Polygon.prototype = {
   }
 };
 
-module.exports = Polygon;
+if (typeof module !== undefined) {
+  module.exports = Polygon;
+}
