@@ -280,6 +280,26 @@ describe('Polygon', function() {
 
   });
 
+  describe('#remove', function() {
+    it('should remove the passed vec2', function() {
+      var p = Polygon([
+        Vec2(0,0),
+      ]);
+
+      p.remove(p.point(0));
+      assert.equal(0, p.length);
+    });
+
+    it('return this', function() {
+      var p = Polygon([
+        Vec2(0,0),
+      ]);
+
+      assert.ok(p === p.remove(p.point(0)));
+    });
+
+  });
+
   describe('#clean', function() {
     it('should clean identical points occurring right after each other', function() {
 
@@ -458,5 +478,19 @@ describe('Polygon', function() {
       assert.ok(p.point(-4).equal(Vec2(10, 10)));
     });
   });
+
+  describe('#center', function() {
+    it('should return a vec2 at the center', function() {
+      var p = Polygon([
+        Vec2(0, 0),
+        Vec2(10, 0),
+        Vec2(10, 10),
+        Vec2(0, 10),
+      ]);
+
+      assert.ok(p.center().equal(Vec2(5, 5)));
+    });
+  });
+
 
 });

@@ -13,12 +13,13 @@ __nodejs__
 * `each(function(prev, current, next, idx) {})`
 * `point(idx)`
 * `dedupe(returnNew)` - ensure all of the points are unique
-* `remove(idx)`
+* `remove(vec2)` - remove the specified `vec2` from this polygon
 * `clean(returnNew)` - removes contiguous points that are the same
 * `winding()` - returns the direction in which a polygon is wound (true === clockwise)
 * `rewind(bool)` - rewinds the polygon in the specified direction (true === clockwise)
 * `area()` - computes the area of the polygon
 * `closestPointTo(vec2)` - finds the closest point in this polygon to `vec2`
+* `center()` - returns a `Vec2` at the center of the AABB
 * `scale(amount)` - scales this polygon
 * `containsPoint(vec2)` - returns true if `vec2` is inside the polygon
 * `containsPolygon(poly)` - returns true if `poly` is completely contained in this polygon

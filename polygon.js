@@ -64,6 +64,7 @@ Polygon.prototype = {
     this.points = this.points.filter(function(point) {
       return point!==vec;
     });
+    return this;
   },
 
   // Remove identical points occurring one after the other
@@ -165,7 +166,12 @@ Polygon.prototype = {
     return point;
   },
 
-  scale : function(amount) {
+  center : function() {
+    var aabb = this.aabb();
+    return Vec2(aabb.x + aabb.w/2, aabb.y + aabb.h/2);
+  },
+
+  scale : function(amount, origin, returnTrue) {
     this.each(function(p, c) {
       c.multiply(amount);
     });
