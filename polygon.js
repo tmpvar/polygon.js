@@ -172,10 +172,26 @@ Polygon.prototype = {
   },
 
   scale : function(amount, origin, returnTrue) {
-    this.each(function(p, c) {
+    var obj = this;
+    if (returnTrue) {
+      obj = this.clone();
+    }
+
+    if (!origin) {
+      origin = obj.center();
+    }
+
+    obj.each(function(p, c) {
       c.multiply(amount);
     });
-    return this;
+
+    var originDiff = origin.multiply(amount, true).subtract(origin);
+
+    obj.each(function(p, c) {
+      c.subtract(originDiff);
+    });
+
+    return obj;
   },
 
   containsPoint : function(point) {
@@ -213,7 +229,12 @@ Polygon.prototype = {
 
 
   aabb : function() {
+    if (this.points.length<2) {
+      return { x: 0, y : 0, w: 0, h: 0};
+    }
+
     var xmin, xmax, ymax, ymin;
+
     xmax = xmin = this.points[1].x;
     ymax = ymin = this.points[1].y;
 

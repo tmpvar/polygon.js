@@ -20,7 +20,7 @@ __nodejs__
 * `area()` - computes the area of the polygon
 * `closestPointTo(vec2)` - finds the closest point in this polygon to `vec2`
 * `center()` - returns a `Vec2` at the center of the AABB
-* `scale(amount)` - scales this polygon
+* `scale(amount, origin, returnNew)` - scales this polygon around `origin` (default is `this.center()`) and will return a new polygon if requested with `returnNew`
 * `containsPoint(vec2)` - returns true if `vec2` is inside the polygon
 * `containsPolygon(poly)` - returns true if `poly` is completely contained in this polygon
 * `aabb()` - returns an object `{x:_, y:_, w:_, h:_}` representing the axis-aligned bounding box of this polygyon

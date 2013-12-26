@@ -407,6 +407,15 @@ describe('Polygon', function() {
       assert.equal(aabb.w, 150);
       assert.equal(aabb.h, 350);
     });
+
+    it('should not explode when there are no points', function() {
+      var p = Polygon();
+      var aabb = p.aabb();
+      assert.equal(aabb.x, 0);
+      assert.equal(aabb.y, 0);
+      assert.equal(aabb.w, 0);
+      assert.equal(aabb.h, 0);      
+    });
   });
 
   describe('#containsPolygon', function() {
@@ -492,5 +501,70 @@ describe('Polygon', function() {
     });
   });
 
+  describe('#scale', function() {
 
+    it('should scale from the center by default', function() {
+      var p = Polygon([
+        Vec2(0, 0),
+        Vec2(10, 0),
+        Vec2(10, 10),
+        Vec2(0, 10),
+      ]);
+
+      p.scale(Vec2(10, 1));
+      assert.ok(Vec2(-45, 0).equal(p.point(0)));
+      assert.ok(Vec2(55, 0).equal(p.point(1)));
+      assert.ok(Vec2(55, 10).equal(p.point(2)));
+      assert.ok(Vec2(-45, 10).equal(p.point(3)));
+      assert.ok(p.center().equal(Vec2(5, 5)));
+
+      p.scale(Vec2(1, 10));
+      assert.ok(Vec2(-45, -45).equal(p.point(0)));
+      assert.ok(Vec2(55, -45).equal(p.point(1)));
+      assert.ok(Vec2(55, 55).equal(p.point(2)));
+      assert.ok(Vec2(-45, 55).equal(p.point(3)));
+
+      assert.ok(p.center().equal(Vec2(5, 5)));
+    });
+
+    it('should scale from an abitrary point when specified', function() {
+      var p = Polygon([
+        Vec2(0, 0),
+        Vec2(10, 0),
+        Vec2(10, 10),
+        Vec2(0, 10),
+      ]);
+
+      p.scale(Vec2(10, 1), Vec2(0, 0));
+      assert.ok(Vec2(0, 0).equal(p.point(0)));
+      assert.ok(Vec2(100, 0).equal(p.point(1)));
+      assert.ok(Vec2(100, 10).equal(p.point(2)));
+      assert.ok(Vec2(0, 10).equal(p.point(3)));
+
+      assert.ok(p.center().equal(Vec2(50, 5)));
+
+      p.scale(Vec2(1, 10), Vec2(0, 0));
+      assert.ok(Vec2(0, 0).equal(p.point(0)));
+      assert.ok(Vec2(100, 0).equal(p.point(1)));
+      assert.ok(Vec2(100, 100).equal(p.point(2)));
+      assert.ok(Vec2(0, 100).equal(p.point(3)));
+
+      assert.ok(p.center().equal(Vec2(50, 50)));
+    });
+
+    it('should chain', function() {
+      var p = Polygon();
+      assert.equal(p, p.scale(10));
+    });
+
+    it('should return a new polygon if returnNew is specified', function() {
+      var p = Polygon([
+        Vec2(10, 10)
+      ]);
+
+      var p2 = p.scale(Vec2(10, 1), null, true);
+      assert.ok(Vec2(100, 10).equal(p2.point(0)));
+      assert.ok(Vec2(10, 10).equal(p.point(0)));
+    });
+  });
 });
