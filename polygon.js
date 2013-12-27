@@ -332,11 +332,7 @@ Polygon.prototype = {
   },
 
   line : function(idx) {
-    var end = (idx === this.points.length-1) ? 
-              this.points[0] :
-              this.points[idx+1];
-
-    return [this.points[idx], end];
+    return [this.point(idx), this.point(idx+1)];
   },
 
   lines : function(fn) {

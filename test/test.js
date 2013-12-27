@@ -593,4 +593,35 @@ describe('Polygon', function() {
     });
   });
 
+  describe('#line', function() {
+    it('should return an array', function() {
+      var p = Polygon([
+        Vec2(0, 0),
+        Vec2(10, 0),
+        Vec2(10, 10),
+        Vec2(0, 10)
+      ]);    
+
+      var line0 = p.line(0);
+      assert.ok(line0[0].equal(p.point(0)));
+      assert.ok(line0[1].equal(p.point(1)));
+
+      var line1 = p.line(1);
+      assert.ok(line1[0].equal(p.point(1)));
+      assert.ok(line1[1].equal(p.point(2)));
+
+      var line2 = p.line(2);
+      assert.ok(line2[0].equal(p.point(2)));
+      assert.ok(line2[1].equal(p.point(3)));
+
+      var line3 = p.line(3);
+      assert.ok(line3[0].equal(p.point(3)));
+      assert.ok(line3[1].equal(p.point(4)));
+
+      var line4 = p.line(4);
+      assert.ok(line4[0].equal(p.point(4)));
+      assert.ok(line4[1].equal(p.point(5)));
+    });
+  });
+
 });
