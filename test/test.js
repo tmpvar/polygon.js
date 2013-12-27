@@ -567,4 +567,30 @@ describe('Polygon', function() {
       assert.ok(Vec2(10, 10).equal(p.point(0)));
     });
   });
+
+  describe('#lines', function() {
+    it('should iterate and call back with pairs', function() {
+      var p = Polygon([
+        Vec2(0, 0),
+        Vec2(10, 0),
+        Vec2(10, 10),
+        Vec2(0, 10)
+      ]);
+
+      var count = 0;
+      p.lines(function(start, end, idx) {
+        assert.equal(idx, count);
+
+        assert.ok(start.equal(p.point(count)));
+        count++
+        assert.ok(end.equal(p.point(count)));
+      });
+    });
+
+    it('should chain', function() {
+      var p = Polygon();
+      assert.equal(p, p.lines(function() {}));
+    });
+  });
+
 });

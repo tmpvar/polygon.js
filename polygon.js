@@ -344,6 +344,8 @@ Polygon.prototype = {
     this.each(function(p, start, end) {
       fn(start, end, idx++);
     });
+
+    return this;
   },
 
   selfIntersections : function() {
