@@ -11,7 +11,7 @@ __nodejs__
 # Supported Methods
 
 * `each(function(prev, current, next, idx) {})`
-* `point(idx)`
+* `point(idx)` - returns the point at index `idx`. note: this will wrap in both directions
 * `dedupe(returnNew)` - ensure all of the points are unique
 * `remove(vec2)` - remove the specified `vec2` from this polygon
 * `clean(returnNew)` - removes contiguous points that are the same
@@ -31,3 +31,4 @@ __nodejs__
 * `pruneSelfIntersections` - remove self intersections from this polygon.  returns an array of polygons
 * `length` - returns the number of points in this polygon
 * `clone` - return a new instance of this polygon
+* `rotate(rads, vec2, returnNew)` - rotate by origin `vec2` (default `this.center()`) by radians `rads` and return a clone if `returnNew` is specified

@@ -458,6 +458,16 @@ Polygon.prototype = {
       points.push(c.clone());
     });
     return new Polygon(points);
+  },
+
+  rotate: function(rads, origin, returnNew) {
+    origin = origin || this.center();
+
+    var obj = (returnNew) ? this.clone() : this;
+
+    return obj.each(function(p, c) {
+      c.subtract(origin).rotate(rads).add(origin);
+    });
   }
 };
 

@@ -624,4 +624,64 @@ describe('Polygon', function() {
     });
   });
 
+  describe('#rotate', function() {
+    it('should rotate around center by default', function() {
+
+      var p = Polygon([
+        Vec2(0, 0),
+        Vec2(10, 0),
+        Vec2(10, 10),
+        Vec2(0, 10)
+      ]); 
+
+      p.rotate(Math.PI/2); // rotate 90 degrees
+
+      assert.ok(p.point(0).equal(10, 0));
+      assert.ok(p.point(1).equal(10, 10));
+      assert.ok(p.point(2).equal(0, 10));
+      assert.ok(p.point(3).equal(0, 0));
+    });
+
+    it('should support rotation around arbitrary points', function() {
+      var p = Polygon([
+        Vec2(0, 0),
+        Vec2(10, 0),
+        Vec2(10, 10),
+        Vec2(0, 10)
+      ]); 
+
+      p.rotate(Math.PI/2, Vec2(0, 0)); // rotate 90 degrees
+
+      assert.ok(p.point(0).equal(0, 0));
+      assert.ok(p.point(1).equal(0, 10));
+      assert.ok(p.point(2).equal(-10, 10));
+      assert.ok(p.point(3).equal(-10, 0));
+    });
+
+    it('should chain', function() {
+      var p = Polygon();
+      assert.equal(p, p.rotate());
+    });
+
+    it('should return a new polgyon when returnNew is specified', function() {
+      var p = Polygon([
+        Vec2(0, 0),
+        Vec2(10, 0),
+        Vec2(10, 10),
+        Vec2(0, 10)
+      ]); 
+
+      var p2 = p.rotate(Math.PI/2, Vec2(0, 0), true); // rotate 90 degrees
+
+      assert.ok(p.point(0).equal(0, 0));
+      assert.ok(p.point(1).equal(10, 0));
+      assert.ok(p.point(2).equal(10, 10));
+      assert.ok(p.point(3).equal(0, 10));
+
+      assert.ok(p2.point(0).equal(0, 0));
+      assert.ok(p2.point(1).equal(0, 10));
+      assert.ok(p2.point(2).equal(-10, 10));
+      assert.ok(p2.point(3).equal(-10, 0));
+    });
+  });
 });
