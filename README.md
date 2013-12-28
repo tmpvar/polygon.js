@@ -32,3 +32,8 @@ __nodejs__
 * `length` - returns the number of points in this polygon
 * `clone` - return a new instance of this polygon
 * `rotate(rads, vec2, returnNew)` - rotate by origin `vec2` (default `this.center()`) by radians `rads` and return a clone if `returnNew` is specified
+* `equal(poly)` - return true if this polygon has the same components and the incoming `poly`
+
+## license
+
+MIT

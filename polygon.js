@@ -468,6 +468,17 @@ Polygon.prototype = {
     return obj.each(function(p, c) {
       c.subtract(origin).rotate(rads).add(origin);
     });
+  },
+
+  equal : function(poly) {
+    var current = poly.length;
+
+    while(current--) {
+      if (!this.point(current).equal(poly.point(current))) {
+        return false;
+      }
+    }
+    return true;
   }
 };
 

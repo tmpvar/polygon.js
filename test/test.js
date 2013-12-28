@@ -684,4 +684,11 @@ describe('Polygon', function() {
       assert.ok(p2.point(3).equal(-10, 0));
     });
   });
+
+  describe('#equal', function() {
+    it('should compare order and value', function() {
+      assert.ok(Polygon([Vec2(1, 1)]).equal(Polygon([Vec2(1, 1)])));
+      assert.ok(!Polygon([Vec2(1, 1)]).equal(Polygon([Vec2(1, 0)])));
+    });
+  });
 });
