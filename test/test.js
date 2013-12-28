@@ -14,6 +14,25 @@ describe('Polygon', function() {
 
       assert.equal(p.points.length, 3);
     });
+
+    it('can create a polygon a single Vec2', function() {
+      var p = new Polygon(Vec2(10, 20));
+      assert.ok(p.point(0).equal(Vec2(10, 20)));
+    });
+
+    it('accepts arrays', function() {
+      var p = new Polygon([
+        [10, 20]
+      ]);
+      assert.ok(p.point(0).equal(Vec2(10, 20)));
+    });
+
+    it('accepts objects', function() {
+      var p = new Polygon([
+        {x : 10, y: 20 }
+      ]);
+      assert.ok(p.point(0).equal(Vec2(10, 20)));
+    });
   });
 
   describe('#each', function() {

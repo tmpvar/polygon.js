@@ -7,8 +7,23 @@ __nodejs__
 
 `npm install polygon`
 
+## Usage
 
-# Supported Methods
+Create a new polygon:
+
+```javascript
+var p = new Polygon([
+  Vec2(0, 0),
+  Vec2(10, 0),
+  Vec2(0, 10)
+]);
+
+```
+
+You can pass an array of `Vec2`s, arrays `[x, y]`, or objects `{ x: 10, y: 20 }`
+
+
+## Supported Methods
 
 * `each(function(prev, current, next, idx) {})`
 * `point(idx)` - returns the point at index `idx`. note: this will wrap in both directions

@@ -16,7 +16,23 @@ function Polygon(points) {
     return new Polygon(points);
   }
 
-  this.points = points || [];
+  if (!Array.isArray(points)) {
+    points = (points) ? [points] : [];
+  }
+
+  this.points = points.map(function(point) {
+    if (Array.isArray(point)) {
+      return Vec2.fromArray(point);
+    } else if (!(point instanceof Vec2)) {
+      if (typeof point.x !== 'undefined' &&
+          typeof point.y !== 'undefined')
+      {
+        return Vec2(point.x, point.y);
+      }
+    } else {
+      return point;
+    }
+  });
 }
 
 Polygon.prototype = {
