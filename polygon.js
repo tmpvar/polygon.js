@@ -470,6 +470,16 @@ Polygon.prototype = {
     });
   },
 
+  translate : function(vec2, returnNew) {
+    var obj = (returnNew) ? this.clone() : this;
+
+    obj.each(function(p, c) {
+      c.add(vec2);
+    });
+
+    return obj;
+  },
+
   equal : function(poly) {
     var current = poly.length;
 

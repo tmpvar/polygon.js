@@ -691,4 +691,49 @@ describe('Polygon', function() {
       assert.ok(!Polygon([Vec2(1, 1)]).equal(Polygon([Vec2(1, 0)])));
     });
   });
+
+  describe('#translate', function() {
+    it('should move a polygon', function() {
+      var p = Polygon([
+        Vec2(0, 0),
+        Vec2(10, 0),
+        Vec2(10, 10),
+        Vec2(0, 10)
+      ]);
+
+      p.translate(Vec2(10, 10));
+
+      assert.ok(p.equal(Polygon([
+        Vec2(10, 10),
+        Vec2(20, 10),
+        Vec2(20, 20),
+        Vec2(10, 20)
+      ])));
+    });
+
+    it('should return a new polygon if specified', function() {
+      var p = Polygon([
+        Vec2(0, 0),
+        Vec2(10, 0),
+        Vec2(10, 10),
+        Vec2(0, 10)
+      ]);
+
+      var p2 = p.translate(Vec2(10, 10), true);
+
+      assert.ok(p2.equal(Polygon([
+        Vec2(10, 10),
+        Vec2(20, 10),
+        Vec2(20, 20),
+        Vec2(10, 20)
+      ])));
+
+      assert.ok(p.equal(Polygon([
+        Vec2(0, 0),
+        Vec2(10, 0),
+        Vec2(10, 10),
+        Vec2(0, 10)
+      ])));
+    });
+  });
 });
