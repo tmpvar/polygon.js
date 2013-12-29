@@ -42,9 +42,10 @@ function Polygon(points) {
 Polygon.prototype = {
   each : function(fn) {
     for (var i = 0; i<this.points.length; i++) {
+
       var prev = i>0 ? this.points[i-1] : this.points[this.points.length-1];
       var next = i<this.points.length-1 ? this.points[i+1] : this.points[0];
-      if (fn.call(this, prev, this.points[i], next, i) === false) {
+      if (fn.call(this, this.point(i-1), this.point(i), this.point(i+1), i) === false) {
         break;
       }
     }
