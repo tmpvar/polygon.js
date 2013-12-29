@@ -42,9 +42,6 @@ function Polygon(points) {
 Polygon.prototype = {
   each : function(fn) {
     for (var i = 0; i<this.points.length; i++) {
-
-      var prev = i>0 ? this.points[i-1] : this.points[this.points.length-1];
-      var next = i<this.points.length-1 ? this.points[i+1] : this.points[0];
       if (fn.call(this, this.point(i-1), this.point(i), this.point(i+1), i) === false) {
         break;
       }
@@ -89,7 +86,7 @@ Polygon.prototype = {
 
   // Remove identical points occurring one after the other
   clean : function(returnNew) {
-    var last = this.points[this.points.length-1];
+    var last = this.point(-1);
 
     var points = this.points.filter(function(a) {
       var ret = false;
@@ -124,7 +121,7 @@ Polygon.prototype = {
 
   area : function() {
     var area = 0;
-    var first = this.points[0];
+    var first = this.point(0);
 
     this.each(function(prev, current, next, idx) {
       if (idx<2) { return; }
@@ -247,10 +244,10 @@ Polygon.prototype = {
       return { x: 0, y : 0, w: 0, h: 0};
     }
 
-    var xmin, xmax, ymax, ymin;
+    var xmin, xmax, ymax, ymin, point1 = this.point(1);
 
-    xmax = xmin = this.points[1].x;
-    ymax = ymin = this.points[1].y;
+    xmax = xmin = point1.x;
+    ymax = ymin = point1.y;
 
     this.each(function(p, c) {
       if (c.x > xmax) {
@@ -405,7 +402,7 @@ Polygon.prototype = {
 
     // TODO: create tree based on relationship operations
 
-    var rootVec = this.points[0].clone();
+    var rootVec = this.point(0).clone();
     rootVec.s = 0;
     rootVec.b = (this.points.length-1) + 0.99;
     var root = new Node(rootVec);
@@ -445,15 +442,15 @@ Polygon.prototype = {
 
         // collect up to the next isect
         for (var j = Math.floor(tree[i].s); j<=Math.floor(next.s); j++) {
-          poly.push(this.points[j]);
+          poly.push(this.point(j));
         }
 
         poly.push(next);
-        poly.push(this.points[Math.floor(tree[i].b)]);
+        poly.push(this.point(Math.floor(tree[i].b)));
       } else {
         poly.push(tree[i])
         for (var k = Math.floor(tree[i].s+1); k<=Math.floor(tree[i].b); k++) {
-          poly.push(this.points[k]);
+          poly.push(this.point(k));
         }
       }
 
