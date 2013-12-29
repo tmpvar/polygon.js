@@ -128,10 +128,10 @@ Polygon.prototype = {
 
       var edge1 = first.subtract(current, true);
       var edge2 = first.subtract(prev, true);
-      area += ((edge1.x * edge2.y) - (edge1.y * edge2.x))/2
+      area += ((edge1.x * edge2.y) - (edge1.y * edge2.x));
     });
 
-    return area;
+    return area/2;
   },
 
   closestPointTo : function(vec) {
