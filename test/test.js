@@ -247,6 +247,15 @@ describe('Polygon', function() {
       ]).containsPoint(Vec2(5,5)));
     });
 
+    it('works with polygons in negative space', function() {
+      assert.ok(Polygon([
+        Vec2(0,0),
+        Vec2(-10,0),
+        Vec2(-10,-10),
+        Vec2(10,-10)
+      ]).containsPoint(Vec2(-5,-5)));
+    });
+
     it('should return false when a vec is outside of a poly', function() {
       assert.ok(!Polygon([
         Vec2(0,0),
