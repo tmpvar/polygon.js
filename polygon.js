@@ -12,6 +12,10 @@ var toTAU = function(rads) {
 
 
 function Polygon(points) {
+  if (points instanceof Polygon) {
+    return points;
+  }
+
   if (!(this instanceof Polygon)) {
     return new Polygon(points);
   }
@@ -36,7 +40,6 @@ function Polygon(points) {
 }
 
 Polygon.prototype = {
-
   each : function(fn) {
     for (var i = 0; i<this.points.length; i++) {
       var prev = i>0 ? this.points[i-1] : this.points[this.points.length-1];

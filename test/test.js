@@ -33,6 +33,12 @@ describe('Polygon', function() {
       ]);
       assert.ok(p.point(0).equal(Vec2(10, 20)));
     });
+
+    it('hotwires returning incoming polygons', function() {
+      var p = Polygon([Vec2(1, 0)]);
+      var p2 = Polygon(p);
+      assert.ok(p === p2);
+    })
   });
 
   describe('#each', function() {
