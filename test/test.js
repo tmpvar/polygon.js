@@ -770,4 +770,25 @@ describe('Polygon', function() {
       ])));
     });
   });
+
+
+  describe('#selfIntersections', function() {
+    it('returns an polygon', function() {
+      var p = Polygon([
+        Vec2(-10, 0),
+        Vec2(10, 0),
+        Vec2(10, 10),
+        Vec2(1, 10),
+        Vec2(1, -1),
+        Vec2(-1, -1),
+        Vec2(-1, 10),
+        Vec2(-10, 10)
+      ]);
+
+      var isects = p.selfIntersections();
+      assert.equal(2, isects.length);
+      assert.ok(isects.point(0).equal(Vec2(1, 0)));
+      assert.ok(isects.point(1).equal(Vec2(-1, 0)));
+    });
+  });
 });
