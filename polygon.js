@@ -184,6 +184,7 @@ Polygon.prototype = {
   },
 
   center : function() {
+    // TODO: the center of a polygon is not the center of it's aabb.
     var aabb = this.aabb();
     return Vec2(aabb.x + aabb.w/2, aabb.y + aabb.h/2);
   },
@@ -222,7 +223,6 @@ Polygon.prototype = {
         type++;
       }
     });
-
 
     return type%2 === 1;
   },
