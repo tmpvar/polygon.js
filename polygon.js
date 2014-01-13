@@ -297,7 +297,7 @@ Polygon.prototype = {
         next.subtract(current, true).normalize()
       )
 
-      var bisector = Vec2(length, 0).rotate(angleToZero - rads/2);
+      var bisector = Vec2(length, 0).rotate(angleToZero + rads/2);
 
       if (ecross < 0)
       {
