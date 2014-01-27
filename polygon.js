@@ -1,5 +1,9 @@
-var Vec2 = require('vec2');
-var segseg = require('segseg');
+
+if (typeof require !== 'undefined') {
+  var Vec2 = require('vec2');
+  var segseg = require('segseg');
+}
+
 var PI = Math.PI;
 var TAU = PI*2;
 var toTAU = function(rads) {
