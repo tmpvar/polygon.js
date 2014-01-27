@@ -1,6 +1,6 @@
 {
   "name": "polygon",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "utility for working with polygons (arrays of vec2s)",
   "main": "polygon.js",
   "directories": {

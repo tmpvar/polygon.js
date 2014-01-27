@@ -503,6 +503,10 @@ Polygon.prototype = {
   }
 };
 
-if (typeof module !== 'undefined') {
+if (typeof module !== 'undefined' && module.exports) {
   module.exports = Polygon;
+}
+
+if (typeof window !== 'undefined') {
+  window.Polygon = Polygon;
 }
