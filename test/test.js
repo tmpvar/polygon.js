@@ -459,7 +459,7 @@ describe('Polygon', function() {
       assert.equal(aabb.x, 0);
       assert.equal(aabb.y, 0);
       assert.equal(aabb.w, 0);
-      assert.equal(aabb.h, 0);      
+      assert.equal(aabb.h, 0);
     });
   });
 
@@ -683,7 +683,7 @@ describe('Polygon', function() {
         Vec2(10, 0),
         Vec2(10, 10),
         Vec2(0, 10)
-      ]);    
+      ]);
 
       var line0 = p.line(0);
       assert.ok(line0[0].equal(p.point(0)));
@@ -715,7 +715,7 @@ describe('Polygon', function() {
         Vec2(10, 0),
         Vec2(10, 10),
         Vec2(0, 10)
-      ]); 
+      ]);
 
       p.rotate(Math.PI/2); // rotate 90 degrees
 
@@ -731,7 +731,7 @@ describe('Polygon', function() {
         Vec2(10, 0),
         Vec2(10, 10),
         Vec2(0, 10)
-      ]); 
+      ]);
 
       p.rotate(Math.PI/2, Vec2(0, 0)); // rotate 90 degrees
 
@@ -752,7 +752,7 @@ describe('Polygon', function() {
         Vec2(10, 0),
         Vec2(10, 10),
         Vec2(0, 10)
-      ]); 
+      ]);
 
       var p2 = p.rotate(Math.PI/2, Vec2(0, 0), true); // rotate 90 degrees
 

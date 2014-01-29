@@ -328,7 +328,7 @@ Polygon.prototype = {
       bisector.point = current;
       raw.push(bisector);
     });
-    
+
     Polygon(raw).each(function(p, c, n, i) {
 
       var isect = segseg(c, c.point, n, n.point);
@@ -410,7 +410,7 @@ Polygon.prototype = {
     }
 
     var interfere = function(s1, b1, s2, b2) {
-      return (s1 < s2 && s2 < b1 && b2 > b1) || (s2 < b1 && b1 < b2 && s1 < s2); 
+      return (s1 < s2 && s2 < b1 && b2 > b1) || (s2 < b1 && b1 < b2 && s1 < s2);
     }
 
     function Node(value) {
