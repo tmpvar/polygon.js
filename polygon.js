@@ -14,6 +14,18 @@ var toTAU = function(rads) {
   return rads;
 };
 
+var isArray = function (a) {
+  return Object.prototype.toString.call(a) === "[object Array]";
+}
+
+var isFunction = function(a) {
+  return typeof a === 'function';
+}
+
+var defined = function(a) {
+  return typeof a !== 'undefined';
+}
+
 
 function Polygon(points) {
   if (points instanceof Polygon) {
@@ -232,14 +244,15 @@ Polygon.prototype = {
   },
 
   containsPolygon : function(subject) {
-    var ret = true, that = this;
-    subject.each(function(p, c, n) {
-      if (!that.containsPoint(c)) {
-        ret = false;
+    if (isArray(subject)) {
+      subject = new Polygon(subject);
+    }
+
+    for (var i=0; i<subject.points.length; i++) {
+      if (!this.containsPoint(subject.points[i])) {
         return false;
       }
-    });
-
+    }
 
     for (var i=0; i<this.points.length; i++) {
       var outer = this.line(i);
@@ -253,7 +266,7 @@ Polygon.prototype = {
       }
     }
 
-    return ret;
+    return true;
   },
 
 
@@ -518,7 +531,70 @@ Polygon.prototype = {
       }
     }
     return true;
+  },
+
+  contains : function(thing) {
+
+    if (!thing) {
+      return false;
+    }
+
+    // Other circles
+    if (defined(thing.radius) && thing.position) {
+      var radius = isFunction(thing.radius) ? thing.radius() : thing.radius;
+      if (this.closestPointTo(thing.position).distanceToCurrent >= thing.radius) {
+        return true;
+      }
+
+    } else if (typeof thing.points !== 'undefined') {
+
+      var points, l;
+      if (isFunction(thing.containsPolygon)) {
+        points = thing.points;
+      } else if (isArray(thing.points)) {
+        points = thing.points;
+      }
+
+      return this.containsPolygon(points);
+
+    } else if (
+      defined(thing.x1) &&
+      defined(thing.x2) &&
+      defined(thing.y1) &&
+      defined(thing.y2)
+    ) {
+      return this.containsPolygon([
+        new Vec2(thing.x1, thing.y1),
+        new Vec2(thing.x2, thing.y1),
+        new Vec2(thing.x2, thing.y2),
+        new Vec2(thing.x1, thing.y2)
+      ]);
+
+    } else if (defined(thing.x) && defined(thing.y)) {
+
+      var x2, y2;
+
+      if (defined(thing.w) && defined(thing.h)) {
+        x2 = thing.x+thing.w;
+        y2 = thing.y+thing.h;
+      }
+
+      if (defined(thing.width) && defined(thing.height)) {
+        x2 = thing.x+thing.width;
+        y2 = thing.y+thing.height;
+      }
+
+      return this.containsPolygon([
+        new Vec2(thing.x, thing.y),
+        new Vec2(x2, thing.y),
+        new Vec2(x2, y2),
+        new Vec2(thing.x, y2)
+      ]);
+    }
+
+    return false;
   }
+
 };
 
 if (typeof module !== 'undefined' && module.exports) {

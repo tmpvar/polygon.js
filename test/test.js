@@ -820,7 +820,6 @@ describe('Polygon', function() {
     });
   });
 
-
   describe('#selfIntersections', function() {
     it('returns an polygon', function() {
       var p = Polygon([
@@ -840,4 +839,124 @@ describe('Polygon', function() {
       assert.ok(isects.point(1).equal(Vec2(-1, 0)));
     });
   });
+
+  describe('contains', function() {
+    it('should return detect polygon containment', function() {
+      var p = Polygon([
+        Vec2(10, 10),
+        Vec2(20, 10),
+        Vec2(20, 20),
+        Vec2(10, 20)
+      ]);
+
+      var p2 = Polygon([
+        Vec2(11, 11),
+        Vec2(19, 11),
+        Vec2(19, 19),
+        Vec2(11, 19)
+      ]);
+
+      var p3 = Polygon([
+        Vec2(11, 9),
+        Vec2(19, 11),
+        Vec2(19, 19),
+        Vec2(11, 19)
+      ]);
+
+      assert.ok(p.contains(p2));
+      assert.ok(!p.contains(p3))
+    });
+
+    it('should return detect circle-like containment', function() {
+
+      var p = Polygon([
+        Vec2(0, 0),
+        Vec2(20, 0),
+        Vec2(20, 20),
+        Vec2(0, 20)
+      ]);
+
+      assert.ok(p.contains({
+        position: Vec2(10, 10),
+        radius : 10
+      }));
+
+      assert.ok(!p.contains({
+        position: Vec2(10, 10),
+        radius : 10.1
+      }));
+    });
+
+    it('should return detect bounding-box-like containment', function() {
+
+      var p = Polygon([
+        Vec2(0, 0),
+        Vec2(20, 0),
+        Vec2(20, 20),
+        Vec2(0, 20)
+      ]);
+
+      assert.ok(p.contains({
+        x1: 1,
+        y1: 1,
+        x2: 5,
+        y2: 5
+      }));
+
+      assert.ok(!p.contains({
+        x1: 1,
+        y1: 1,
+        x2: 5,
+        y2: 50
+      }));
+    });
+
+    it('should return detect rect-like containment (w/h)', function() {
+
+      var p = Polygon([
+        Vec2(0, 0),
+        Vec2(20, 0),
+        Vec2(20, 20),
+        Vec2(0, 20)
+      ]);
+
+      assert.ok(p.contains({
+        x: 1,
+        y: 1,
+        w: 5,
+        h: 5
+      }));
+
+      assert.ok(!p.contains({
+        x: 1,
+        y: 1,
+        w: 5,
+        h: 50
+      }));
+    });
+
+    it('should return detect rect-like containment (width/height)', function() {
+
+      var p = Polygon([
+        Vec2(0, 0),
+        Vec2(20, 0),
+        Vec2(20, 20),
+        Vec2(0, 20)
+      ]);
+
+      assert.ok(p.contains({
+        x: 1,
+        y: 1,
+        width: 5,
+        height: 5
+      }));
+
+      assert.ok(!p.contains({
+        x: 1,
+        y: 1,
+        width: 5,
+        height: 50
+      }));
+    });
+  })
 });
