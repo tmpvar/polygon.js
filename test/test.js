@@ -312,6 +312,17 @@ describe('Polygon', function() {
       assert.ok(p.containsPoint(Vec2(100, 50)));
     });
 
+    it('[on line] should work even if entering through a point', function() {
+      var p = Polygon([
+        Vec2(0, 0),
+        Vec2(100, 0),
+        Vec2(100, 100),
+        Vec2(0, 100)
+      ], 20);
+
+      assert.ok(p.containsPoint(Vec2(100, 0)));
+    });
+
   });
 
   describe('#remove', function() {
@@ -489,6 +500,44 @@ describe('Polygon', function() {
 
       assert.ok(!p.containsPolygon(p2))
     });
+
+    it('should return false if the outer polygon intersects the inner', function() {
+
+      /*
+        The setup
+
+        o--o     o--o
+        |  |     |  |
+        |   |   |   |
+        | o--|-|--o |
+        | |   o   | |
+        | |       | |
+        | o-------o |
+        o-----------o
+
+      */
+
+
+
+      var p = new Polygon([
+        Vec2(0,0),
+        Vec2(100,0),
+        Vec2(100,100),
+        Vec2(80,100),
+        Vec2(50,50),
+        Vec2(20,100),
+        Vec2(0,100)
+      ]);
+
+      var p2 = new Polygon([
+        Vec2(10,10),
+        Vec2(90,10),
+        Vec2(90,60),
+        Vec2(10,60)
+      ]);
+
+      assert.ok(!p.containsPolygon(p2))
+    })
   });
 
   describe('#offset', function() {

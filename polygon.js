@@ -239,6 +239,20 @@ Polygon.prototype = {
         return false;
       }
     });
+
+
+    for (var i=0; i<this.points.length; i++) {
+      var outer = this.line(i);
+      for (var j=0; j<subject.points.length; j++) {
+        var inner = subject.line(j);
+
+        var isect = segseg(outer[0], outer[1], inner[0], inner[1]);
+        if (isect && isect !== true) {
+          return false;
+        }
+      }
+    }
+
     return ret;
   },
 
