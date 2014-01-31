@@ -840,7 +840,7 @@ describe('Polygon', function() {
     });
   });
 
-  describe('contains', function() {
+  describe('#contains', function() {
     it('should return detect polygon containment', function() {
       var p = Polygon([
         Vec2(10, 10),
@@ -884,6 +884,26 @@ describe('Polygon', function() {
       assert.ok(!p.contains({
         position: Vec2(10, 10),
         radius : 10.1
+      }));
+    });
+
+    it('should return detect circle-like containment (function)', function() {
+
+      var p = Polygon([
+        Vec2(0, 0),
+        Vec2(20, 0),
+        Vec2(20, 20),
+        Vec2(0, 20)
+      ]);
+
+      assert.ok(p.contains({
+        position: Vec2(10, 10),
+        radius : function() { return 10; }
+      }));
+
+      assert.ok(!p.contains({
+        position: Vec2(10, 10),
+        radius : function() { return 10.1 }
       }));
     });
 

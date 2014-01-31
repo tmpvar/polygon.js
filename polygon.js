@@ -541,8 +541,14 @@ Polygon.prototype = {
 
     // Other circles
     if (defined(thing.radius) && thing.position) {
-      var radius = isFunction(thing.radius) ? thing.radius() : thing.radius;
-      if (this.closestPointTo(thing.position).distanceToCurrent >= thing.radius) {
+      var radius;
+      if (isFunction(thing.radius)) {
+        radius = thing.radius();
+      } else {
+        radius = thing.radius;
+      }
+
+      if (this.closestPointTo(thing.position).distanceToCurrent >= radius) {
         return true;
       }
 
