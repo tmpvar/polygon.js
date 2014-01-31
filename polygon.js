@@ -151,52 +151,44 @@ Polygon.prototype = {
   },
 
   closestPointTo : function(vec) {
-    var points = [];
+    var points = [],
+        l = this.points.length,
+        dist = Infinity,
+        found = null,
+        foundIndex = 0,
+        foundOnPoint = false,
+        i;
 
-    this.each(function(prev, current, next) {
-      // TODO: optimize
-      var a = prev;
-      var b = current;
+    for (i=0; i<l; i++) {
+
+      var a = this.point(i-1);
+      var b = this.point(i);
       var ab = b.subtract(a, true);
       var veca = vec.subtract(a, true);
-      var vecadot = veca.clone().dot(ab);
-      var abdot = ab.clone().dot(ab);
+      var vecadot = veca.dot(ab);
+      var abdot = ab.dot(ab);
 
-      var t = vecadot/abdot;
+      var t = Math.min(Math.max(vecadot/abdot, 0), 1);
 
-      if (t<0) {
-        t = 0;
+      var point = ab.multiply(t).add(a);
+      var length = vec.subtract(point, true).lengthSquared();
+
+      if (length < dist) {
+        found = point;
+        foundIndex = i;
+        foundOnPoint = t===0 || t===1;
+        dist = length;
       }
+    }
 
-      if (t>1) {
-        t = 1;
-      }
+    found.prev = this.point(foundIndex-1);
+    found.next = this.point(foundIndex+1);
 
-      var point = ab.multiply(t, true).add(a);
+    if (foundOnPoint) {
+      found.current = this.point(foundIndex);
+    }
 
-      points.push({
-        distance: point.distance(vec),
-        point : point
-      });
-    });
-
-    var obj = points.sort(function(a, b) {
-      return a.distance-b.distance;
-    })[0];
-
-    var point = obj.point;
-    point.distanceToCurrent = obj.distance;
-
-    this.each(function(prev, current, next) {
-      if (point.equal(current)) {
-        point.current = current;
-        point.prev = prev;
-        point.next = next;
-        return false;
-      }
-    });
-
-    return point;
+    return found;
   },
 
   center : function() {
@@ -544,7 +536,7 @@ Polygon.prototype = {
 
     var closestPoint = this.closestPointTo(position);
 
-    if (this.closestPointTo(position).distanceToCurrent >= radius) {
+    if (closestPoint.distance(position) >= radius) {
       return true;
     }
   },

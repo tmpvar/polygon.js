@@ -181,18 +181,6 @@ describe('Polygon', function() {
 
   describe('#closestPointTo', function() {
     it('should identify the closest point in the polygon to the incoming vector', function() {
-      /*
-            o
-
-           o
-         / |
-        o--o
-
-
-      */
-
-
-
       var p = new Polygon([
         Vec2(200,200),
         Vec2(200,0),
@@ -201,15 +189,15 @@ describe('Polygon', function() {
 
       var target = Vec2(300,300);
       var point = p.closestPointTo(target);
-      console.log(point);
+
       assert.equal(point.x, 200);
       assert.equal(point.y, 200);
 
       assert.deepEqual(point.current, p.points[0]);
       assert.deepEqual(point.next, p.points[1]);
       assert.deepEqual(point.prev, p.points[2]);
-      assert.equal(point.distance(target), 141.4213562373095);
 
+      assert.equal(point.distance(target), 141.4213562373095);
     });
 
     it('should identify the closest point in the polygon to the incoming vector', function() {
@@ -220,11 +208,12 @@ describe('Polygon', function() {
         Vec2(0,0)
       ]);
 
-      var point = p.closestPointTo(Vec2(300,100));
+      var target = Vec2(300,100);
+      var point = p.closestPointTo(target);
       assert.equal(point.x, 200);
       assert.equal(point.y, 100);
       assert.ok(!point.current);
-      assert.equal(point.distanceToCurrent, 100);
+      assert.equal(point.distance(target), 100);
     });
   });
 
