@@ -533,6 +533,22 @@ Polygon.prototype = {
     return true;
   },
 
+
+  containsCircle : function(x, y, radius) {
+    var position = new Vec2(x, y);
+
+    // Confirm that the x,y is inside of our bounds
+    if (!this.containsPoint(position)) {
+      return false;
+    }
+
+    var closestPoint = this.closestPointTo(position);
+
+    if (this.closestPointTo(position).distanceToCurrent >= radius) {
+      return true;
+    }
+  },
+
   contains : function(thing) {
 
     if (!thing) {
@@ -548,9 +564,7 @@ Polygon.prototype = {
         radius = thing.radius;
       }
 
-      if (this.closestPointTo(thing.position).distanceToCurrent >= radius) {
-        return true;
-      }
+      return this.containsCircle(thing.position.x, thing.position.y, radius);
 
     } else if (typeof thing.points !== 'undefined') {
 

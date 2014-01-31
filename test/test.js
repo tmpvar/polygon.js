@@ -181,20 +181,34 @@ describe('Polygon', function() {
 
   describe('#closestPointTo', function() {
     it('should identify the closest point in the polygon to the incoming vector', function() {
+      /*
+            o
+
+           o
+         / |
+        o--o
+
+
+      */
+
+
+
       var p = new Polygon([
         Vec2(200,200),
         Vec2(200,0),
         Vec2(0,0)
       ]);
 
-      var point = p.closestPointTo(Vec2(300,300));
+      var target = Vec2(300,300);
+      var point = p.closestPointTo(target);
+      console.log(point);
       assert.equal(point.x, 200);
       assert.equal(point.y, 200);
 
       assert.deepEqual(point.current, p.points[0]);
       assert.deepEqual(point.next, p.points[1]);
       assert.deepEqual(point.prev, p.points[2]);
-      assert.equal(point.distanceToCurrent, 141.4213562373095);
+      assert.equal(point.distance(target), 141.4213562373095);
 
     });
 
@@ -840,33 +854,8 @@ describe('Polygon', function() {
     });
   });
 
-  describe('#contains', function() {
-    it('should return detect polygon containment', function() {
-      var p = Polygon([
-        Vec2(10, 10),
-        Vec2(20, 10),
-        Vec2(20, 20),
-        Vec2(10, 20)
-      ]);
 
-      var p2 = Polygon([
-        Vec2(11, 11),
-        Vec2(19, 11),
-        Vec2(19, 19),
-        Vec2(11, 19)
-      ]);
-
-      var p3 = Polygon([
-        Vec2(11, 9),
-        Vec2(19, 11),
-        Vec2(19, 19),
-        Vec2(11, 19)
-      ]);
-
-      assert.ok(p.contains(p2));
-      assert.ok(!p.contains(p3))
-    });
-
+  describe('#containsCircle', function() {
     it('should return detect circle-like containment', function() {
 
       var p = Polygon([
@@ -905,6 +894,83 @@ describe('Polygon', function() {
         position: Vec2(10, 10),
         radius : function() { return 10.1 }
       }));
+
+      assert.ok(!p.rewind(false).contains({
+        position: Vec2(10, 10),
+        radius : function() { return 10.1 }
+      }));
+    });
+
+    it('should not contain a circle outside of its bounds', function() {
+      var p = Polygon([
+        Vec2(-11,11),
+        Vec2(15,-4),
+        Vec2(32,12),
+        Vec2(29,40),
+        Vec2(-15,28)
+      ]);
+
+      assert.ok(!p.containsCircle({
+        position: Vec2(-29, -19),
+        radius: 13.03840481
+      }));
+    });
+
+
+    it('should handle the case where a line goes through the circle', function() {
+
+      /*
+
+        o---o
+        |   |    ___
+        |   |   -   -
+        |   o- |-----|-o
+        |      |  o  | |
+        |       -___-  |
+        |              |
+        o--------------o
+
+        yeah, it's a circle..
+      */
+
+      var p = new Polygon([
+        Vec2(0, 0),
+        Vec2(100, 0),
+        Vec2(100, 50),
+        Vec2(25, 50),
+        Vec2(25, 100),
+        Vec2(0, 100)
+      ]);
+
+      assert.ok(!p.containsCircle(75,49, 10));
+    });
+  });
+
+  describe('#contains', function() {
+    it('should return detect polygon containment', function() {
+      var p = Polygon([
+        Vec2(10, 10),
+        Vec2(20, 10),
+        Vec2(20, 20),
+        Vec2(10, 20)
+      ]);
+
+      var p2 = Polygon([
+        Vec2(11, 11),
+        Vec2(19, 11),
+        Vec2(19, 19),
+        Vec2(11, 19)
+      ]);
+
+      var p3 = Polygon([
+        Vec2(11, 9),
+        Vec2(19, 11),
+        Vec2(19, 19),
+        Vec2(11, 19)
+      ]);
+
+      assert.ok(p.contains(p2));
+      assert.ok(!p.contains(p3))
     });
 
     it('should return detect bounding-box-like containment', function() {
