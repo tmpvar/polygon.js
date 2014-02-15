@@ -221,18 +221,15 @@ Polygon.prototype = {
   },
 
   containsPoint : function(point) {
-    var type=0,
-        left = Vec2(this.aabb().x, point.y + .00001),
-        seen = {};
-
+    var c = false;
+    
     this.each(function(prev, current, next) {
-      var i = segseg(left, point, current, next);
-      if (i && i!==true) {
-        type++;
-      }
+      ((prev.y <= point.y && point.y < current.y) || (current.y <= point.y && point.y < prev.y))
+        && (point.x < (current.x - prev.x) * (point.y - prev.y) / (current.y - prev.y) + prev.x)
+        && (c = !c);
     });
-
-    return type%2 === 1;
+    
+    return c;
   },
 
   containsPolygon : function(subject) {
