@@ -281,65 +281,6 @@ describe('Polygon', function() {
         Vec2(90, 110)
       ]).containsPoint(Vec2(85, 95)));
     });
-
-    it('should work even if exiting through a single point', function() {
-      var p = Polygon([
-        Vec2(50, 50),
-        Vec2(50, 200),
-        Vec2(500, 125)
-      ]);
-
-      assert.ok(!p.containsPoint(Vec2(520, 125)));
-    });
-
-    it('[outside] should work even if entering and exiting through a single point', function() {
-      var p = Polygon([
-        Vec2(300, 300),
-        Vec2(320, 350),
-        Vec2(300, 400),
-        Vec2(400, 400),
-        Vec2(450, 450),
-        Vec2(400, 200),
-        Vec2(400, 100)
-      ], 20);
-
-      assert.ok(!p.containsPoint(Vec2(400, 100)));
-    });
-
-
-    it('[outside] should work even if entering and exiting through a two points', function() {
-      var p = Polygon([
-        Vec2(50, 50),
-        Vec2(100, 0),
-        Vec2(150, 50),
-        Vec2(50, 100)
-      ], 20);
-
-      assert.ok(!p.containsPoint(Vec2(200, 5)));
-    });
-
-    it('[inside] should work even if entering through a point', function() {
-      var p = Polygon([
-        Vec2(50, 50),
-        Vec2(100, 0),
-        Vec2(150, 50),
-        Vec2(50, 100)
-      ], 20);
-
-      assert.ok(p.containsPoint(Vec2(100, 50)));
-    });
-
-    it('[on line] should work even if entering through a point', function() {
-      var p = Polygon([
-        Vec2(0, 0),
-        Vec2(100, 0),
-        Vec2(100, 100),
-        Vec2(0, 100)
-      ], 20);
-
-      assert.ok(p.containsPoint(Vec2(100, 0)));
-    });
-
   });
 
   describe('#remove', function() {
