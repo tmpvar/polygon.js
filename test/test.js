@@ -248,6 +248,13 @@ describe('Polygon', function() {
         Vec2(10,10),
         Vec2(0,10)
       ]).containsPoint(Vec2(5,5)));
+      
+      assert.ok(Polygon([
+        Vec2(90, 90),
+        Vec2(110, 90),
+        Vec2(110, 110),
+        Vec2(90, 110)
+      ]).containsPoint(Vec2(100, 100)));
     });
 
     it('works with polygons in negative space', function() {
@@ -266,6 +273,13 @@ describe('Polygon', function() {
         Vec2(10,10),
         Vec2(0,10)
       ]).containsPoint(Vec2(50,5)));
+      
+      assert.ok(!Polygon([
+        Vec2(90, 90),
+        Vec2(110, 90),
+        Vec2(110, 110),
+        Vec2(90, 110)
+      ]).containsPoint(Vec2(85, 95)));
     });
 
     it('should work even if exiting through a single point', function() {
