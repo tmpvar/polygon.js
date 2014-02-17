@@ -1,6 +1,6 @@
 {
   "name": "polygon",
-  "version": "0.0.14",
+  "version": "0.1.0",
   "description": "utility for working with polygons (arrays of vec2s)",
   "main": "polygon.js",
   "directories": {
@@ -14,7 +14,7 @@
     "istanbul": "~0.2.4"
   },
   "scripts": {
-    "test": "node_modules/mocha/bin/mocha test/test.js -R spec",
+    "test": "mocha test/test.js -R spec",
     "cover": "istanbul cover _mocha -- test/test.js -R spec"
   },
   "repository": {
