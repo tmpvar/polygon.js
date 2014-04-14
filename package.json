@@ -11,7 +11,9 @@
     "segseg": "~0.2.0"
   },
   "devDependencies": {
-    "istanbul": "~0.2.4"
+    "istanbul": "~0.2.4",
+    "fc": "^0.1.5",
+    "onecolor": "^2.4.0"
   },
   "scripts": {
     "test": "mocha test/test.js -R spec",

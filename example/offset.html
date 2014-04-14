@@ -1,0 +1,107 @@
+<html>
+<head>
+  <title>polygon.js - offset</title>
+  <script type="text/javascript" src="../node_modules/onecolor/one-color-all-debug.js"></script>
+  <script type="text/javascript" src="../node_modules/fc/fc.js"></script>
+  <script type="text/javascript" src="../node_modules/vec2/vec2.js"></script>
+  <script type="text/javascript" src="../node_modules/segseg/index.js"></script>
+  <script type="text/javascript" src="../polygon.js"></script>
+</head>
+<body>
+
+  <script type="text/javascript">
+    var hsl = function(h,s,l) {
+      return new one.color.HSL(h, s, l).hex();
+    };
+
+    var p = new Polygon([
+      // Vec2(100, 100),
+      // Vec2(150, 0),
+      // Vec2(200, 0),
+
+      Vec2(-100, -100),
+      Vec2(100, -100),
+      Vec2(200, -200),
+
+
+      Vec2(100, 100),
+      Vec2(-100, 100)
+    ]);
+
+
+    var renderPoly = function(poly, angle) {
+      ctx.beginPath();
+        ctx.moveTo(poly.point(0).x, poly.point(0).y);
+        poly.each(function(l, c) {
+          ctx.lineTo(c.x, c.y);
+        });
+      ctx.closePath();
+      ctx.strokeStyle = hsl(angle, .75, .65);
+      ctx.stroke();
+
+      ctx.strokeStyle =  hsl(angle, 1, .65);
+      poly.each(function(l, c) {
+        ctx.beginPath();
+          ctx.arc(c.x, c.y, 1, Math.PI*2, false);
+          ctx.stroke();
+
+        if (c.point) {
+          dashedLine(ctx, c, c.point, 4);
+          ctx.stroke();
+        }
+      });
+    };
+
+
+    var dashedLine = function (ctx, start, end, dashLen) {
+      ctx.beginPath();
+      if (dashLen == undefined) dashLen = 2;
+      ctx.moveTo(start.x, start.y);
+
+      var dX = end.x - start.x;
+      var dY = end.y - start.y;
+      var dashes = Math.floor(Math.sqrt(dX * dX + dY * dY) / dashLen);
+      var dashX = dX / dashes;
+      var dashY = dY / dashes;
+
+      var q = 0;
+      while (q++ < dashes) {
+        start.x += dashX;
+        start.y += dashY;
+        ctx[q % 2 == 0 ? 'moveTo' : 'lineTo'](start.x, start.y);
+      }
+      ctx[q % 2 == 0 ? 'moveTo' : 'lineTo'](start.x, start.y);
+    };
+
+
+
+    var ctx = fc(function() {
+      var w = ctx.canvas.width;
+      var h = ctx.canvas.height;
+
+      ctx.fillStyle = '#111115';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.save();
+        ctx.translate(w/2, h/2);
+        ctx.scale(1, -1);
+
+        renderPoly(p, 0);
+
+        renderPoly(p.offset(10), .5);
+        renderPoly(p.offset(5), .5);
+        renderPoly(p.offset(-50), .2);
+        renderPoly(p.offset(20), .7);
+
+      ctx.restore();
+
+    }, false);
+
+
+
+
+  </script>
+
+
+</body>
+</html>
