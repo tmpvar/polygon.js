@@ -222,13 +222,13 @@ Polygon.prototype = {
 
   containsPoint : function(point) {
     var c = false;
-    
+
     this.each(function(prev, current, next) {
       ((prev.y <= point.y && point.y < current.y) || (current.y <= point.y && point.y < prev.y))
         && (point.x < (current.x - prev.x) * (point.y - prev.y) / (current.y - prev.y) + prev.x)
         && (c = !c);
     });
-    
+
     return c;
   },
 
@@ -297,69 +297,22 @@ Polygon.prototype = {
 
   offset : function(delta) {
 
-    var raw = [],
-        ret = [],
-        last = null,
-        bisectors = [],
-        rightVec = Vec2(1, 0);
+    var res = [];
+    this.rewind(false).each(function(p, c, n, i) {
+      var e1 = c.subtract(p, true).normalize();
+      var e2 = c.subtract(n, true).normalize();
 
-    // Compute bisectors
-    this.each(function(prev, current, next, idx) {
-      var e1 = current.subtract(prev, true).normalize();
-      var e2 = current.subtract(next, true).normalize();
-      var ecross = e1.perpDot(e2);
-      var length = delta / Math.sin(Math.acos(e1.dot(e2))/2);
+      var r = delta / Math.sin(Math.acos(e1.dot(e2))/2);
+      var d = e1.add(e2, true).normalize().multiply(r, true);
 
-      length = -length;
-      var angleToZero = rightVec.angleTo(current.subtract(prev, true).normalize());
-
-      var rads = prev.subtract(current, true).normalize().angleTo(
-        next.subtract(current, true).normalize()
-      )
-
-      var bisector = Vec2(length, 0).rotate(angleToZero + rads/2);
-
-      if (ecross < 0)
-      {
-        bisector.add(current);
-      } else {
-        bisector = current.subtract(bisector, true);
-      }
-      bisector.cornerAngle = rads;
-      current.bisector = bisector;
-      bisector.point = current;
-      raw.push(bisector);
+      var o = e1.perpDot(e2) < 0 ? c.add(d, true) : c.subtract(d, true);
+      o.point = c;
+      res.push(o);
     });
 
-    Polygon(raw).each(function(p, c, n, i) {
+    var offsetPolygon = Polygon(res);
 
-      var isect = segseg(c, c.point, n, n.point);
-
-      if (isect && isect !== true) {
-        // This means that the offset is self-intersecting
-        // find where and use that as the current vec instead
-
-        var isect2 = segseg(
-          p,
-          c,
-          n,
-          this.point(i+2)
-        );
-
-        if (isect2 && isect2 !== false) {
-          isect = isect2;
-        }
-
-        this.remove(c);
-        c.set(isect[0], isect[1]);
-
-      }
-
-      ret.push(c)
-    });
-
-    return Polygon(ret);
-
+    return offsetPolygon;
   },
 
   line : function(idx) {
