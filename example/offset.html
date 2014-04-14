@@ -5,6 +5,7 @@
   <script type="text/javascript" src="../node_modules/fc/fc.js"></script>
   <script type="text/javascript" src="../node_modules/vec2/vec2.js"></script>
   <script type="text/javascript" src="../node_modules/segseg/index.js"></script>
+  <script type="text/javascript" src="../node_modules/line2/line2.js"></script>
   <script type="text/javascript" src="../polygon.js"></script>
 </head>
 <body>
@@ -90,8 +91,11 @@
 
         renderPoly(p.offset(10), .5);
         renderPoly(p.offset(5), .5);
-        renderPoly(p.offset(-50), .2);
         renderPoly(p.offset(20), .7);
+
+        for (var i = -10; i>-100; i -= 10) {
+          renderPoly(p.offset(i), .2);
+        }
 
       ctx.restore();
 

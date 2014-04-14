@@ -8,7 +8,8 @@
   },
   "dependencies": {
     "vec2": "~1.3.2",
-    "segseg": "~0.2.0"
+    "segseg": "~0.2.0",
+    "line2": "^0.2.1"
   },
   "devDependencies": {
     "istanbul": "~0.2.4",

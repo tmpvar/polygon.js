@@ -2,6 +2,7 @@
 if (typeof require !== 'undefined') {
   var Vec2 = require('vec2');
   var segseg = require('segseg');
+  var Line2 = require('line2');
 }
 
 var PI = Math.PI;
@@ -312,7 +313,27 @@ Polygon.prototype = {
 
     var offsetPolygon = Polygon(res);
 
-    return offsetPolygon;
+    var cleanLocal = [], skip = false;
+    offsetPolygon.each(function(p, c, n, i) {
+
+      var isect = segseg(c, c.point, n, n.point);
+
+      if (!skip && isect) {
+        var n2 = offsetPolygon.point(i+2);
+        var a = new Line2(n2.x, n2.y, n.x, n.y);
+        var b = new Line2(p.x, p.y, c.x, c.y);
+
+        cleanLocal.push(a.intersect(b));
+        skip = true;
+      } else if (!skip) {
+        cleanLocal.push(c);
+      } else {
+        skip = false;
+      }
+
+    });
+
+    return Polygon(cleanLocal);
   },
 
   line : function(idx) {
