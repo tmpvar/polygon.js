@@ -123,6 +123,33 @@ Polygon.prototype = {
     }
   },
 
+  simplify : function() {
+    var clean = function(v) {
+      return Math.round(v * 10000)/10000;
+    }
+
+    var collinear = function(a, b, c) {
+      var r = a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y);
+      return clean(r) === 0;
+    };
+
+    var newPoly = [];
+    for (var i = 0; i<this.points.length; i++) {
+      var p = this.point(i-1);
+      var n = this.point(i+1);
+      var c = this.point(i);
+
+      var angle = c.subtract(p, true).angleTo(c.subtract(n, true));
+
+      if (!collinear(p, c, n) && clean(angle)) {
+        newPoly.push(c);
+      }
+    }
+
+    this.points = newPoly;
+    return this;
+  },
+
   winding : function() {
     return this.area() > 0;
   },
@@ -296,7 +323,7 @@ Polygon.prototype = {
     };
   },
 
-  offset : function(delta) {
+  offset : function(delta, prune) {
 
     var res = [];
     this.rewind(false).each(function(p, c, n, i) {
@@ -312,7 +339,9 @@ Polygon.prototype = {
     });
 
     var offsetPolygon = Polygon(res);
-
+    if (prune === false) {
+      return offsetPolygon;
+    }
     var cleanLocal = [], skip = false;
     offsetPolygon.each(function(p, c, n, i) {
 
@@ -334,6 +363,7 @@ Polygon.prototype = {
     });
 
     return Polygon(cleanLocal);
+
   },
 
   line : function(idx) {
@@ -389,13 +419,14 @@ Polygon.prototype = {
       return (s1 < s2 && s2 < b1 && b2 > b1) || (s2 < b1 && b1 < b2 && s1 < s2);
     }
 
-    function Node(value) {
+    function Node(value, depth) {
       this.value = value;
+      this.depth = this.depth;
       this.children = [];
     }
 
     // TODO: create tree based on relationship operations
-
+    // TODO: ensure the root node is valid
     var rootVec = this.point(0).clone();
     rootVec.s = 0;
     rootVec.b = (this.points.length-1) + 0.99;
@@ -412,16 +443,12 @@ Polygon.prototype = {
       //if (!contain(1-last.s, 1-last.b, 1-c.s, 1-c.b)) {
         tree.push(c);
         last = c;
-      //} else {
-        // collect under children
       //}
-
     });
 
     var ret = [];
-
     if (tree.length < 2) {
-      return ret;
+      return [this];
     }
 
     tree.sort(function(a, b) {
@@ -440,7 +467,11 @@ Polygon.prototype = {
         }
 
         poly.push(next);
-        poly.push(this.point(Math.floor(tree[i].b)));
+
+        // collect up to the next isect
+        for (var j = Math.floor(next.b+1); j<=Math.floor(tree[i].b); j++) {
+          poly.push(this.point(j));
+        }
       } else {
         poly.push(tree[i])
         for (var k = Math.floor(tree[i].s+1); k<=Math.floor(tree[i].b); k++) {
@@ -450,6 +481,8 @@ Polygon.prototype = {
 
       ret.push(new Polygon(poly));
     }
+
+
     return ret;
   },
 

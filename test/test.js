@@ -248,7 +248,7 @@ describe('Polygon', function() {
         Vec2(10,10),
         Vec2(0,10)
       ]).containsPoint(Vec2(5,5)));
-      
+
       assert.ok(Polygon([
         Vec2(90, 90),
         Vec2(110, 90),
@@ -273,7 +273,7 @@ describe('Polygon', function() {
         Vec2(10,10),
         Vec2(0,10)
       ]).containsPoint(Vec2(50,5)));
-      
+
       assert.ok(!Polygon([
         Vec2(90, 90),
         Vec2(110, 90),
@@ -508,7 +508,7 @@ describe('Polygon', function() {
 
     var offset = p.offset(-10);
     offset.each(function(p, c) {
-      assert.equal(c.distance(c.point), 14.142135623730951);
+      assert.equal(Vec2.clean(c.distance(c.point)), 14.1421356);
     });
   });
 
