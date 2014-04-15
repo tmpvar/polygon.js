@@ -326,7 +326,7 @@ Polygon.prototype = {
   offset : function(delta, prune) {
 
     var res = [];
-    this.rewind(false).each(function(p, c, n, i) {
+    this.rewind(false).simplify().each(function(p, c, n, i) {
       var e1 = c.subtract(p, true).normalize();
       var e2 = c.subtract(n, true).normalize();
 
