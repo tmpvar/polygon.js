@@ -325,7 +325,7 @@ Polygon.prototype = {
     };
   },
 
-  offset : function(delta, prune) {
+  offset : function(delta) {
 
     var res = [];
     this.rewind(false).simplify().each(function(p, c, n, i) {
@@ -439,8 +439,6 @@ Polygon.prototype = {
           vec.si = i;
           vec.bi = i2;
 
-          vec.color = "red";
-          vec.radius = 5;
           ret.push(vec);
         }
       }
@@ -465,7 +463,6 @@ console.log('self isects', selfIntersections.points.length, selfIntersections.de
       return (s1 < s2 && s2 < b1 && b2 > b1) || (s2 < b1 && b1 < b2 && s1 < s2);
     }
 
-    // TODO: create tree based on relationship operations
     // TODO: ensure the root node is valid
     var root = this.point(0).clone();
     root.s = 0;
@@ -507,28 +504,22 @@ console.log('self isects', selfIntersections.points.length, selfIntersections.de
       return oldParent;
     };
 
-
     selfIntersections.points.forEach(function(c) {
       c.children = [];
 
-      var rb = belongTo(last.s, last.b, c.s, c.b);
-      var rc = contain(last.s, last.b, c.s, c.b);
-      var ri = interfere(last.s, last.b, c.s, c.b);
-      console.log(
-        'belongTo:', rb,
-        'contain:', rc,
-        'interfere:', ri
-      );
-      if (rc) {
+      var relationship = compare(last, c);
+      console.log('relationship %s->%s (%s)', last.toString(), c.toString(), relationship);
+
+      if (relationship === 'contains') {
         node_reparent(c, last);
         last = c;
-      } else if (rb) {
+      } else if (relationship === 'belongs') {
         // honestly, this should never happen since the array
         // is sorted prior to coming here.
         var parent = node_reparent(last, c);
         node_reparent(c, parent);
-
-      } else if (ri) {
+        console.warn('saw a reparent in sorted intersection list')
+      } else if (relationship === 'interfere') {
         var parent = last.parent;
         while (parent) {
           var result = compare(parent, c)
@@ -545,33 +536,14 @@ console.log('self isects', selfIntersections.points.length, selfIntersections.de
               break;
 
               case 'interferes':
-                console.error('interferes');
+                console.error('interferes', [c, parent]);
               break;
             }
             break;
           }
-          // console.warn('RESULT', );
-
-
-          // if (contain(parent.s, parent.b, c.s, c.p)) {
-          //   c.depth = parent.depth + 1;
-          //   parent.children.push(c);
-          //   c.parent = parent;
-          //   console.log('landed')
-          //   break;
-          // }
-          // parent = parent.parent;
         }
         console.log('parented', !!c.parent)
 
-        // c.depth = last.parent.depth + 1;
-        // last.parent.children = last.parent.children.filter(function(a) {
-        //   return a !== last;
-        // });
-
-        // c.children.push(last);
-        // last.parent.children.push(c);
-        // last.parent = c;
       } else {
         // node_reparent(c, last);
         // console.error('unhandled!')
@@ -581,7 +553,7 @@ console.log('self isects', selfIntersections.points.length, selfIntersections.de
     });
 
     console.log('TREE');
-console.log(root);
+    console.log(root);
     var ret = []
     var that = this;
     var recurse = function(node) {

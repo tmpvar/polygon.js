@@ -171,24 +171,22 @@
           }
         } else {
           var offset = p.offset(80, true);
-          for (var i = -70; i<500; i += 10) {
+          for (var i = -120; i<500; i += 10) {
             if (i === 0) { continue; }
             var o = p.offset(i, true).simplify();
             var selfi = o.pruneSelfIntersections()
 
-            selfi.forEach(function(s, j) {
-              renderPoly(selfi, i/100 - j/selfi.length, false);
-            })
+            var isects = o.selfIntersections();
+            isects.points.forEach(function(point) {
+              ctx.beginPath();
+                ctx.arc(point.x, point.y, 5, Math.PI*2, false);
+                ctx.strokeStyle = "red";
+                ctx.stroke();
+            });
 
-            // if (!selfi.length || (selfi.length === 1 && selfi[0].points.length === 1)) {
-            //   console.log('here');
-            //   renderPoly(o, .4, false);
-            // } else {
-            //   if (selfi.length === 1) {
-            //          console.log(selfi);
-            //   }
-            //   renderPoly(selfi, i/200);
-            // }
+            selfi.forEach(function(s, j) {
+              renderPoly(s, i/100 - j/selfi.length, false);
+            })
           }
 
           // var delta = -90;
