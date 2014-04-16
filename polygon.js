@@ -455,6 +455,9 @@ Polygon.prototype = {
 
   pruneSelfIntersections : function() {
     var selfIntersections = this.selfIntersections();
+    if (!selfIntersections.length) {
+      return [this];
+    }
 
     var belongTo = function(s1, b1, s2, b2) {
       return s1 > s2 && b1 < b2
@@ -478,21 +481,27 @@ Polygon.prototype = {
     // TODO: ensure the root node is valid
     var rootVec = this.point(0).clone();
     rootVec.s = 0;
-    rootVec.b = (this.points.length-1) + 0.99;
-    var root = new Node(rootVec);
-    var last = root;
+    rootVec.si = 0;
+    rootVec.bi = (this.points.length-1)
+    rootVec.b = rootVec.bi + 0.99;
+    var root = new Node(rootVec, 0);
+    var last = rootVec;
     var tree = [rootVec];
     selfIntersections.each(function(p, c, n) {
-      console.log(
-        'belongTo:', belongTo(last.s, last.b, c.s, c.b),
-        'contain:', contain(last.s, last.b, c.s, c.b),
-        'interfere:', interfere(last.s, last.b, c.s, c.b)
+      var rb = belongTo(last.s, last.b, c.s, c.b);
+      var rc = contain(last.s, last.b, c.s, c.b);
+      var ri = interfere(last.s, last.b, c.s, c.b)
+      console.log(c.toString(), last.toString(),
+        'belongTo:', rb,
+        'contain:', rc,
+        'interfere:', ri
       );
 
-      //if (!contain(1-last.s, 1-last.b, 1-c.s, 1-c.b)) {
+
+      //if (!rb) {
         tree.push(c);
-        last = c;
       //}
+      last = c;
     });
 
     var ret = [];
@@ -500,37 +509,93 @@ Polygon.prototype = {
       return [this];
     }
 
+    tree = Polygon(tree).dedupe().points;
+
     tree.sort(function(a, b) {
-      return a.s - b.s;
+      return a.s < b.s ? -1 : 1;
     });
 
+    tree.forEach(function(t) {
+      console.log(t.s, t.b, t.toString());
+    })
+
+console.log('tree.length', tree.length, this.point(0).toString())
+    var start = 0;
     for (var i=0; i<tree.length; i+=2) {
+      var next = tree[i+1] || null;
       var poly = [];
-      var next = (i<tree.length-1) ? tree[i+1] : null;
 
-     if (next) {
+      var collect = function(vec, i) {
+        console.log('collect (%s)', i, vec && vec.toString());
+        poly.push(vec);
+      }
 
-        // collect up to the next isect
-        for (var j = Math.floor(tree[i].s); j<=Math.floor(next.s); j++) {
-          poly.push(this.point(j));
+      console.log('VALS (tree[i]: si=%s, bi=%s, %s) (next: si=%s, bi=%s, %s)', tree[i].si, tree[i].bi, tree[i].toString(), next && next.si, next && next.bi, next && next.toString())
+
+
+      if (i && next) {
+console.log('treeibi', tree[i].bi, this.length);
+
+collect(next);
+       for (var j = next.bi; j<=tree[i].bi+1; j++) {
+          collect(this.point(j), j);
+        }
+        collect(tree[i]);
+        for (var j = tree[i].si; j<=next.si; j++) {
+          collect(this.point(j), j);
         }
 
-        poly.push(next);
+        console.log()
 
-        // collect up to the next isect
-        for (var j = Math.floor(next.b+1); j<=Math.floor(tree[i].b); j++) {
-          poly.push(this.point(j));
+      } else if (next) {
+
+        for (var j = tree[i].si-1; j<next.si; j++) {
+          collect(this.point(j), j);
         }
+
+        collect(next, 'next');
+
+        for (var k = next.bi+1; k<tree[i].bi; k++) {
+          collect(this.point(k), k);
+        }
+
       } else {
-        poly.push(tree[i])
-        for (var k = Math.floor(tree[i].s+1); k<=Math.floor(tree[i].b); k++) {
-          poly.push(this.point(k));
+        collect(tree[i]);
+        for (var j = tree[i].si; j<=tree[i].bi; j++) {
+          collect(this.point(j), j);
         }
       }
 
-      ret.push(new Polygon(poly));
-    }
+//       console.log('iteration', i);
+//       var poly = [];
+//       var next = (i<tree.length-1) ? tree[i+1] : null;
 
+//       if (next) {
+//         var start = tree[i].si;
+
+//         // collect up to the next isect
+//         for (var j = start; j<=next.si; j++) {
+//           poly.push(this.point(j));
+//         }
+
+//         poly.push(next);
+
+//         // collect up to the next isect
+//         for (var j = next.bi+1; j<=tree[i].bi; j++) {
+//           poly.push(this.point(j));
+//         }
+
+//         poly.push(tree[i]);
+//       } else {
+// console.log(tree[i].si, tree[i].bi)
+//         poly.push(tree[i])
+//         for (var k = tree[i].si+1; k<=tree[i].bi; k++) {
+//           poly.push(this.point(k));
+//         }
+//       }
+      var polygon = Polygon(poly).simplify();
+      polygon.length > 2 && ret.push(polygon);
+    }
 
     return ret;
   },
