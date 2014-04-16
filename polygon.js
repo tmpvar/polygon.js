@@ -420,31 +420,28 @@ Polygon.prototype = {
     var poly = this;
     var l = this.points.length+1;
     // TODO: use a faster algorithm. Bentley–Ottmann is a good first choice
-    for (var i = 0; i<=l+1; i++) {
-      var s = this.point(i);
-      var e = this.point(i+1);
+    for (var i = 0; i<l; i++) {
+      var s = this.point(i-1);
+      var e = this.point(i);
 
-      for (var i2 = i-2; i2<=l+1; i2++) {
-        var s2 = this.point(i2);
-        var e2 = this.point(i2+1);
+      for (var i2 = i+2; i2<=l+1; i2++) {
+        var s2 = this.point(i2-1);
+        var e2 = this.point(i2);
+        var isect = segseg(s, e, s2, e2);
 
-        if (!s2.equal(e) && !s2.equal(s) && !e2.equal(s) && !e2.equal(e)) {
-          var isect = segseg(s, e, s2, e2);
+        // self-intersection
+        if (isect && isect !== true) {
+          var vec = Vec2.fromArray(isect);
+          // TODO: wow, this is inneficient but is crucial for creating the
+          //       tree later on.
+          vec.s = i + (s.subtract(vec, true).length() / s.subtract(e, true).length())
+          vec.b = i2 + (s2.subtract(vec, true).length() / s2.subtract(e2, true).length())
+          vec.si = i;
+          vec.bi = i2;
 
-          // self-intersection
-          if (isect && isect !== true) {
-            var vec = Vec2.fromArray(isect);
-            // TODO: wow, this is inneficient but is crucial for creating the
-            //       tree later on.
-            vec.s = i + (s.subtract(vec, true).length() / s.subtract(e, true).length())
-            vec.b = i2 + (s2.subtract(vec, true).length() / s2.subtract(e2, true).length())
-            vec.si = i;
-            vec.bi = i2;
-
-            vec.color = "red";
-            vec.radius = 5;
-            ret.push(vec);
-          }
+          vec.color = "red";
+          vec.radius = 5;
+          ret.push(vec);
         }
       }
     }
@@ -455,7 +452,7 @@ Polygon.prototype = {
 
   pruneSelfIntersections : function() {
     var selfIntersections = this.selfIntersections();
-
+console.log('self isects', selfIntersections.points.length, selfIntersections.dedupe().toString())
     var belongTo = function(s1, b1, s2, b2) {
       return s1 > s2 && b1 < b2
     }
@@ -477,13 +474,41 @@ Polygon.prototype = {
     root.b = root.bi + 0.99;
     root.children = [];
     root.depth = 0;
+
     var last = root;
 
     selfIntersections.points.sort(function(a, b) {
       return a.s < b.s ? -1 : 1;
     });
 
-    selfIntersections.dedupe().each(function(p, c, n) {
+    var compare = function(a, b) {
+      if (belongTo(a.s, a.b, b.s, b.b)) {
+        return 'belongs';
+      } else if (contain(a.s, a.b, b.s, b.b)) {
+        return 'contains';
+      } else if (interfere(a.s, a.b, b.s, b.b)) {
+        return 'interferes'
+      } else {
+        return null;
+      }
+    }
+
+    var node_reparent = function(node, parent) {
+      if (node.parent) {
+        node.parent.children = node.parent.children.filter(function(n) {
+          return n !== node;
+        });
+      }
+
+      var oldParent = node.parent || null;
+      node.parent = parent;
+      node.depth = typeof parent.depth !== 'undefined' ? parent.depth + 1 : 0;
+      parent.children.push(node);
+      return oldParent;
+    };
+
+
+    selfIntersections.points.forEach(function(c) {
       c.children = [];
 
       var rb = belongTo(last.s, last.b, c.s, c.b);
@@ -494,26 +519,76 @@ Polygon.prototype = {
         'contain:', rc,
         'interfere:', ri
       );
+      if (rc) {
+        node_reparent(c, last);
+        last = c;
+      } else if (rb) {
+        // honestly, this should never happen since the array
+        // is sorted prior to coming here.
+        var parent = node_reparent(last, c);
+        node_reparent(c, parent);
 
-      if (rc || rb) {
-        c.depth = last.depth+1;
-        last.children.push(c);
+      } else if (ri) {
+        var parent = last.parent;
+        while (parent) {
+          var result = compare(parent, c)
+          if (!result) {
+            parent = parent.parent;
+          } else {
+            switch (result) {
+              case 'belongs':
+                console.error('unhandled belongs situation');
+              break;
+
+              case 'contains':
+                console.error('unhandled contains situation');
+              break;
+
+              case 'interferes':
+                console.error('interferes');
+              break;
+            }
+            break;
+          }
+          // console.warn('RESULT', );
+
+
+          // if (contain(parent.s, parent.b, c.s, c.p)) {
+          //   c.depth = parent.depth + 1;
+          //   parent.children.push(c);
+          //   c.parent = parent;
+          //   console.log('landed')
+          //   break;
+          // }
+          // parent = parent.parent;
+        }
+        console.log('parented', !!c.parent)
+
+        // c.depth = last.parent.depth + 1;
+        // last.parent.children = last.parent.children.filter(function(a) {
+        //   return a !== last;
+        // });
+
+        // c.children.push(last);
+        // last.parent.children.push(c);
+        // last.parent = c;
       } else {
-        c.depth = 1;
-        root.children.push(c);
+        // node_reparent(c, last);
+        // console.error('unhandled!')
+        // last = c;
       }
-      last = c;
+
     });
 
     console.log('TREE');
-
+console.log(root);
     var ret = []
     var that = this;
     var recurse = function(node) {
       var odd = !!(node.depth % 2);
 
       console.log(node.depth, odd)
-      console.log(new Array(node.depth).map(String).join(' '), node.toString())
+      console.log(new Array(node.depth*4).map(String).join(' '), node.toString())
       if (!odd) {
         var poly = [];
 
@@ -530,6 +605,7 @@ Polygon.prototype = {
         if (!odd) {
           // collect the child
           poly.push(child);
+          console.log('last child', !!node.children[i+1]);
           var childCollectTo = (node.children[i+1]) ?  node.children[i+1].bi : node.bi;
           console.log('from %s to %s', child.bi, childCollectTo);
           for (var j = child.bi; j<=childCollectTo; j++) {
