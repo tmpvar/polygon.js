@@ -460,69 +460,88 @@ Polygon.prototype = {
       return (s1 < s2 && s2 < b1 && b2 > b1) || (s2 < b1 && b1 < b2 && s1 < s2);
     }
 
-    function Node(value, depth) {
-      this.value = value;
-      this.depth = this.depth;
-      this.children = [];
-    }
-
     // TODO: create tree based on relationship operations
     // TODO: ensure the root node is valid
-    var rootVec = this.point(0).clone();
-    rootVec.s = 0;
-    rootVec.b = (this.points.length-1) + 0.99;
-    var root = new Node(rootVec);
+    var root = this.point(0).clone();
+    root.s = 0;
+    root.si = 0;
+    root.bi = (this.points.length-1); + 0.99;
+    root.b = root.bi + 0.99;
+    root.children = [];
+    root.depth = 0;
     var last = root;
-    var tree = [rootVec];
-    selfIntersections.each(function(p, c, n) {
+
+    selfIntersections.points.sort(function(a, b) {
+      return a.s < b.s ? -1 : 1;
+    });
+
+    selfIntersections.dedupe().each(function(p, c, n) {
+      c.children = [];
+
+      var rb = belongTo(last.s, last.b, c.s, c.b);
+      var rc = contain(last.s, last.b, c.s, c.b);
+      var ri = interfere(last.s, last.b, c.s, c.b);
       console.log(
-        'belongTo:', belongTo(last.s, last.b, c.s, c.b),
-        'contain:', contain(last.s, last.b, c.s, c.b),
-        'interfere:', interfere(last.s, last.b, c.s, c.b)
+        'belongTo:', rb,
+        'contain:', rc,
+        'interfere:', ri
       );
 
-      //if (!contain(1-last.s, 1-last.b, 1-c.s, 1-c.b)) {
-        tree.push(c);
-        last = c;
-      //}
-    });
-
-    var ret = [];
-    if (tree.length < 2) {
-      return [this];
-    }
-
-    tree.sort(function(a, b) {
-      return a.s - b.s;
-    });
-
-    for (var i=0; i<tree.length; i+=2) {
-      var poly = [];
-      var next = (i<tree.length-1) ? tree[i+1] : null;
-
-     if (next) {
-
-        // collect up to the next isect
-        for (var j = Math.floor(tree[i].s); j<=Math.floor(next.s); j++) {
-          poly.push(this.point(j));
-        }
-
-        poly.push(next);
-
-        // collect up to the next isect
-        for (var j = Math.floor(next.b+1); j<=Math.floor(tree[i].b); j++) {
-          poly.push(this.point(j));
-        }
+      if (rc || rb) {
+        c.depth = last.depth+1;
+        last.children.push(c);
       } else {
-        poly.push(tree[i])
-        for (var k = Math.floor(tree[i].s+1); k<=Math.floor(tree[i].b); k++) {
-          poly.push(this.point(k));
+        c.depth = 1;
+        root.children.push(c);
+      }
+      last = c;
+    });
+
+    console.log('TREE');
+
+    var ret = []
+    var that = this;
+    var recurse = function(node) {
+      var odd = !!(node.depth % 2);
+
+      console.log(node.depth, odd)
+      console.log(new Array(node.depth).map(String).join(' '), node.toString())
+      if (!odd) {
+        var poly = [];
+
+        poly.push(node);
+
+        var collectTo = (node.children.length) ? node.children[0].si : node.bi;
+
+        for (var i=node.si; i<=collectTo; i++) {
+          poly.push(that.point(i));
         }
       }
 
-      ret.push(new Polygon(poly));
-    }
+      node.children.forEach(function(child, i) {
+        if (!odd) {
+          // collect the child
+          poly.push(child);
+          var childCollectTo = (node.children[i+1]) ?  node.children[i+1].bi : node.bi;
+          console.log('from %s to %s', child.bi, childCollectTo);
+          for (var j = child.bi; j<=childCollectTo; j++) {
+            poly.push(that.point(j));
+          }
+        }
 
+        recurse(child)
+      });
+
+
+      if (!odd) {
+        poly.push(that.point(node.bi));
+        ret.push(Polygon(poly));
+      }
+    };
+
+    recurse(root);
+
+console.log(ret);
 
     return ret;
   },
