@@ -645,6 +645,10 @@ Polygon.prototype = {
     }
 
     return false;
+  },
+
+  toString : function() {
+    return this.points.join(',');
   }
 
 };
