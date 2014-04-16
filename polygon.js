@@ -445,7 +445,7 @@ Polygon.prototype = {
     return Polygon(points);
   },
 
-  pruneSelfIntersections : function() {
+  pruneSelfIntersections : function(validFn) {
     var selfIntersections = this.selfIntersections();
     if (!selfIntersections.points.length) {
       return [this];
@@ -463,15 +463,6 @@ console.log('self isects', selfIntersections.points.length, selfIntersections.de
     var interfere = function(s1, b1, s2, b2) {
       return (s1 < s2 && s2 < b1 && b2 > b1) || (s2 < b1 && b1 < b2 && s1 < s2);
     }
-
-    // TODO: ensure the root node is valid
-    var root = this.point(0).clone();
-    root.s = 0;
-    root.si = 0;
-    root.bi = (this.points.length-1); + 0.99;
-    root.b = root.bi + 0.99;
-
-    var last = root;
 
     var node_set_array = function(node, key, value) {
       if (!node[key]) {
@@ -493,9 +484,11 @@ console.log('self isects', selfIntersections.points.length, selfIntersections.de
       }
     }
 
-
-
     var node_associate = function(node, child) {
+      if (!node) {
+        return true;
+      }
+
       var relationship = compare(node, child);
       console.log('%s:%s -> %s:%s :: %s', node.id, node.toString(), child.id, child.toString(), relationship);
       if (relationship) {
@@ -549,9 +542,34 @@ console.log('self isects', selfIntersections.points.length, selfIntersections.de
       return oldParent;
     };
 
-    var points = selfIntersections.points.concat();
+    // TODO: ensure the root node is valid
+    var root = this.point(0).clone();
 
-    points.unshift(root);
+    var points = selfIntersections.points.concat();
+    var startCompareAt = 0;
+
+    if (validFn && !validFn(root)) {
+
+      var index = points.length-1;
+      root = points[index];
+      while (!validFn(root) && index--) {
+        root = points[index];
+      }
+
+      // no valid start points found, bail out
+      if (index == -1) {
+        return [];
+      }
+
+    } else {
+      root.s = 0;
+      root.si = 0;
+      root.bi = (this.points.length-1); + 0.99;
+      root.b = root.bi + 0.99;
+
+      points.unshift(root);
+    }
+
     points.sort(function(a, b) {
       return a.s < b.s ? -1 : 1;
     });
@@ -592,11 +610,19 @@ console.log('contains.length', contains.length, contains.join(','), contains[0],
             collect(that.points[i], 'first-' + i);
           }
 
+          // Ok, here we're going to special case the situation where
+          // we've had to move past the root node to start the collection
+          // process.
+
+
+          if (root.si !== 0) {
+            collect(node);
+          }
+
           for (i=0; i<contains.length; i++) {
             collect(contains[i]);
             var next = contains[i+1];
             var collectTo = next ? next.si : node.bi;
-
             for (var j=contains[i].bi; j<collectTo; j++) {
               collect(that.points[j], i + ' :: ' + j);
             }
@@ -608,8 +634,11 @@ console.log('contains.length', contains.length, contains.join(','), contains[0],
                 console.log('WALKING', depth+2)
                 walk(contains[i].contains[j], depth+2);
               }
+            } else {
+
+              console.log(node, contains[i]);
             }
-            // no else here because the next phase is even aka collection
+            // no else here because the next phase is even
           }
 
           collect(that.point(node.bi), node.id + '.b');
@@ -619,7 +648,6 @@ console.log('contains.length', contains.length, contains.join(','), contains[0],
           for (var i = node.si; i<node.bi; i++) {
             collect(that.point(i));
           }
-
           collect(that.point(node.bi));
         }
 
@@ -628,7 +656,6 @@ console.log('contains.length', contains.length, contains.join(','), contains[0],
     };
 
     walk(root, 0)
-    console.log('polygons', polygons);
     return polygons;
   },
 
