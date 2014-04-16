@@ -55,7 +55,8 @@
       var a = Array.isArray(polygons) ? polygons : [polygons];
 
       a.forEach(function(poly) {
-        poly.simplify && poly.simplify();
+        poly.clean()
+        poly.simplify();
 
         if (!poly.points.length || !poly.point(0)) {
           return;
@@ -170,7 +171,7 @@
           }
         } else {
           var offset = p.offset(80, true);
-          for (var i = -60; i<-50; i += 10) {
+          for (var i = -70; i<500; i += 10) {
             if (i === 0) { continue; }
             var o = p.offset(i, true).simplify();
             var selfi = o.pruneSelfIntersections()
@@ -206,13 +207,6 @@
         }
 
         renderPoly(p, 0, false, 3);
-
-        // renderPoly(p.offset(-60, true).pruneSelfIntersections()[0], .2);
-
-
-        // for (var i = -10; i>-100; i -= 10) {
-        //   renderPoly(p.offset(i, true), .2);
-        // }
 
       ctx.restore();
 
