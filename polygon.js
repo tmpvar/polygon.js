@@ -417,13 +417,20 @@ Polygon.prototype = {
 
   selfIntersections : function() {
     var ret = [];
-
+    var poly = this;
+    var l = this.points.length+1;
     // TODO: use a faster algorithm. Bentley–Ottmann is a good first choice
-    this.lines(function(s, e, i) {
-      this.lines(function(s2, e2, i2) {
+    for (var i = 0; i<=l+1; i++) {
+      var s = this.point(i);
+      var e = this.point(i+1);
 
-        if (!s2.equal(e) && !s2.equal(s) && !e2.equal(s) && !e2.equal(e) && i+1 < i2) {
+      for (var i2 = i-2; i2<=l+1; i2++) {
+        var s2 = this.point(i2);
+        var e2 = this.point(i2+1);
+
+        if (!s2.equal(e) && !s2.equal(s) && !e2.equal(s) && !e2.equal(e)) {
           var isect = segseg(s, e, s2, e2);
+
           // self-intersection
           if (isect && isect !== true) {
             var vec = Vec2.fromArray(isect);
@@ -431,13 +438,19 @@ Polygon.prototype = {
             //       tree later on.
             vec.s = i + (s.subtract(vec, true).length() / s.subtract(e, true).length())
             vec.b = i2 + (s2.subtract(vec, true).length() / s2.subtract(e2, true).length())
+            vec.si = i;
+            vec.bi = i2;
 
+            vec.color = "red";
+            vec.radius = 5;
             ret.push(vec);
           }
         }
-      });
-    }.bind(this));
-    return Polygon(ret);
+      }
+    }
+    var poly = Polygon(ret).clean();
+    console.log(poly);
+    return poly;
   },
 
   pruneSelfIntersections : function() {
