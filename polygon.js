@@ -133,6 +133,8 @@ Polygon.prototype = {
       return clean(r) === 0;
     };
 
+    this.points = this.points.filter(Boolean);
+
     var newPoly = [];
     for (var i = 0; i<this.points.length; i++) {
       var p = this.point(i-1);
