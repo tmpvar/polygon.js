@@ -426,7 +426,6 @@ Polygon.prototype = {
   },
 
   selfIntersections : function() {
-<<<<<<< HEAD
     var points = [];
 
     selfIntersections(this.points, function(isect, i, s, e, i2, s2, e2, unique) {
@@ -448,6 +447,10 @@ Polygon.prototype = {
 
   pruneSelfIntersections : function() {
     var selfIntersections = this.selfIntersections();
+    if (!selfIntersections.points.length) {
+      return [this];
+    }
+
 console.log('self isects', selfIntersections.points.length, selfIntersections.dedupe().toString())
     var belongTo = function(s1, b1, s2, b2) {
       return s1 > s2 && b1 < b2
@@ -467,14 +470,16 @@ console.log('self isects', selfIntersections.points.length, selfIntersections.de
     root.si = 0;
     root.bi = (this.points.length-1); + 0.99;
     root.b = root.bi + 0.99;
-    root.children = [];
-    root.depth = 0;
 
     var last = root;
 
-    selfIntersections.points.sort(function(a, b) {
-      return a.s < b.s ? -1 : 1;
-    });
+    var node_set_array = function(node, key, value) {
+      if (!node[key]) {
+        node[key] = [value];
+      } else {
+        node[key].push(value);
+      }
+    }
 
     var compare = function(a, b) {
       if (belongTo(a.s, a.b, b.s, b.b)) {
@@ -488,116 +493,143 @@ console.log('self isects', selfIntersections.points.length, selfIntersections.de
       }
     }
 
+
+
+    var node_associate = function(node, child) {
+      var relationship = compare(node, child);
+      console.log('%s:%s -> %s:%s :: %s', node.id, node.toString(), child.id, child.toString(), relationship);
+      if (relationship) {
+
+        if (relationship === 'contains') {
+          child.parent = node;
+          node_set_array(node, relationship, child);
+          return true;
+        }
+
+        if (relationship === 'interferes') {
+
+          // TODO: there are other cases
+          //       consider keeping track of all the interference
+          if (node.contains && node.contains.length) {
+            console.log('REPARENTING', node.contains[0], child);
+
+            node_reparent(node.contains[0], child);
+            node_reparent(child, node);
+            // node.contains.forEach(function(contained) {
+            //   node_reparent(contained, child)
+            // });
+//            node_reparent(child, node);
+            console.log(compare(child, node));
+            return true;
+            node_set_array(node.contains[0], 'contains', child);
+            return true;
+          }
+        }
+      }
+    }
+
     var node_reparent = function(node, parent) {
       if (node.parent) {
-        node.parent.children = node.parent.children.filter(function(n) {
+        node.parent.contains = node.parent.contains.filter(function(n) {
           return n !== node;
         });
       }
 
+      if (!parent.contains) {
+        parent.contains = [];
+      }
+
+      if (!node.contains) {
+        node.contains = [];
+      }
+
       var oldParent = node.parent || null;
       node.parent = parent;
-      node.depth = typeof parent.depth !== 'undefined' ? parent.depth + 1 : 0;
-      parent.children.push(node);
+      parent.contains.push(node);
       return oldParent;
     };
 
-    selfIntersections.points.forEach(function(c) {
-      c.children = [];
+    var points = selfIntersections.points.concat();
 
-      var relationship = compare(last, c);
-      console.log('relationship %s->%s (%s)', last.toString(), c.toString(), relationship);
-
-      if (relationship === 'contains') {
-        node_reparent(c, last);
-        last = c;
-      } else if (relationship === 'belongs') {
-        // honestly, this should never happen since the array
-        // is sorted prior to coming here.
-        var parent = node_reparent(last, c);
-        node_reparent(c, parent);
-        console.warn('saw a reparent in sorted intersection list')
-      } else if (relationship === 'interfere') {
-        var parent = last.parent;
-        while (parent) {
-          var result = compare(parent, c)
-          if (!result) {
-            parent = parent.parent;
-          } else {
-            switch (result) {
-              case 'belongs':
-                console.error('unhandled belongs situation');
-              break;
-
-              case 'contains':
-                console.error('unhandled contains situation');
-              break;
-
-              case 'interferes':
-                console.error('interferes', [c, parent]);
-              break;
-            }
-            break;
-          }
-        }
-        console.log('parented', !!c.parent)
-
-      } else {
-        // node_reparent(c, last);
-        // console.error('unhandled!')
-        // last = c;
-      }
-
+    points.unshift(root);
+    points.sort(function(a, b) {
+      return a.s < b.s ? -1 : 1;
     });
 
-    console.log('TREE');
-    console.log(root);
-    var ret = []
-    var that = this;
-    var recurse = function(node) {
-      var odd = !!(node.depth % 2);
+    for (var i=1; i<points.length; i++) {
+      if (!node_associate(points[i-1], points[i])) {
+        var parent = points[i-1].parent;
 
-      console.log(node.depth, odd)
-      console.log(new Array(node.depth*4).map(String).join(' '), node.toString())
+        while (parent) {
+          if (node_associate(parent, points[i])) {
+            console.log('missed, but found')
+            break;
+          }
+          parent = parent.parent;
+        }
+      };
+    }
+
+    console.log('ROOT NODE', root);
+
+    var polygons = [];
+    var that = this;
+    var walk = function(node, depth) {
+      var odd = !!(depth%2)
+      var contains = node.contains || [];
+      var i;
       if (!odd) {
         var poly = [];
-
-        poly.push(node);
-
-        var collectTo = (node.children.length) ? node.children[0].si : node.bi;
-
-        for (var i=node.si; i<=collectTo; i++) {
-          poly.push(that.point(i));
+        var collect = function(n, id) {
+          console.log('collected', id || n.id, n.toArray());
+          poly.push(n);
         }
-      }
 
-      node.children.forEach(function(child, i) {
-        if (!odd) {
-          // collect the child
-          poly.push(child);
-          console.log('last child', !!node.children[i+1]);
-          var childCollectTo = (node.children[i+1]) ?  node.children[i+1].bi : node.bi;
-          console.log('from %s to %s', child.bi, childCollectTo);
-          for (var j = child.bi; j<=childCollectTo; j++) {
-            poly.push(that.point(j));
+        depth > 0 && collect(node, node.si + '->' + node.bi);
+console.log('contains.length', contains.length, contains.join(','), contains[0], node);
+        if (contains.length) {
+          for (i=node.si; i<contains[0].si; i++) {
+            collect(that.points[i], 'first-' + i);
           }
+
+          for (i=0; i<contains.length; i++) {
+            collect(contains[i]);
+            var next = contains[i+1];
+            var collectTo = next ? next.si : node.bi;
+
+            for (var j=contains[i].bi; j<collectTo; j++) {
+              collect(that.points[j], i + ' :: ' + j);
+            }
+
+            if (contains[i].contains) {
+              console.log('contains', contains[i].contains, i, contains[i].contains.length);
+
+              for (var j=0; j<contains[i].contains.length; j++) {
+                console.log('WALKING', depth+2)
+                walk(contains[i].contains[j], depth+2);
+              }
+            }
+            // no else here because the next phase is even aka collection
+          }
+
+          collect(that.point(node.bi), node.id + '.b');
+        } else {
+          collect(node);
+
+          for (var i = node.si; i<node.bi; i++) {
+            collect(that.point(i));
+          }
+
+          collect(that.point(node.bi));
         }
 
-        recurse(child)
-      });
-
-
-      if (!odd) {
-        poly.push(that.point(node.bi));
-        ret.push(Polygon(poly));
+        poly.length > 2 && polygons.push(new Polygon(poly));
       }
     };
 
-    recurse(root);
-
-console.log(ret);
-
-    return ret;
+    walk(root, 0)
+    console.log('polygons', polygons);
+    return polygons;
   },
 
   get length() {

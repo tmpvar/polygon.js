@@ -97,6 +97,14 @@
       });
     };
 
+    var renderPolyPoints = function(polygon, color, radius) {
+      polygon.points.forEach(function(point) {
+        ctx.beginPath();
+          ctx.arc(point.x, point.y, radius || 5, Math.PI*2, false);
+          ctx.strokeStyle = color || 'red';
+          ctx.stroke();
+      });
+    };
 
     var dashedLine = function (ctx, start, end, dashLen) {
       ctx.beginPath();
@@ -170,38 +178,21 @@
             }
           }
         } else {
-          var offset = p.offset(80, true);
-          for (var i = -120; i<500; i += 10) {
+          // TODO: this breaks at -110 because the first point is invalid
+          // TODO: this breaks at 30 because of invalid 'interferes' handling
+          for (var i = -100; i<110; i += 10) {
             if (i === 0) { continue; }
             var o = p.offset(i, true).simplify();
             var selfi = o.pruneSelfIntersections()
 
-            var isects = o.selfIntersections();
-            isects.points.forEach(function(point) {
-              ctx.beginPath();
-                ctx.arc(point.x, point.y, 5, Math.PI*2, false);
-                ctx.strokeStyle = "red";
-                ctx.stroke();
-            });
+            // renderPolyPoints(o.selfIntersections());
 
             selfi.forEach(function(s, j) {
+
+              // renderPolyPoints(s, 'green', 2);
               renderPoly(s, i/100 - j/selfi.length, false);
-            })
+            });
           }
-
-          // var delta = -90;
-
-          // renderPoly(p.offset(delta, true), .01)
-
-          // var isects = p.offset(delta, true).simplify().selfIntersections();
-          // isects.points.forEach(function(point) {
-          //   point.color = "red";
-          //   point.radius = 5;
-          // });
-
-          // renderPoly(p.offset(delta, true).simplify().pruneSelfIntersections(), .6)
-          // //renderPoly(o.simplify().pruneSelfIntersections(), .2)
-          // //renderPoly(offset.simplify().pruneSelfIntersections(), .2);
         }
 
         renderPoly(p, 0, false, 3);
