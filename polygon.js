@@ -438,6 +438,9 @@ Polygon.prototype = {
       v.si = i;
       v.bi = i2;
 
+      vec.color = "red";
+      vec.radius = 5;
+
       // don't create extra garbage for no reason
       return false;
     });
@@ -447,7 +450,7 @@ Polygon.prototype = {
 
   pruneSelfIntersections : function() {
     var selfIntersections = this.selfIntersections();
-
+console.log('self isects', selfIntersections.points.length, selfIntersections.dedupe().toString())
     var belongTo = function(s1, b1, s2, b2) {
       return s1 > s2 && b1 < b2
     }
@@ -469,13 +472,41 @@ Polygon.prototype = {
     root.b = root.bi + 0.99;
     root.children = [];
     root.depth = 0;
+
     var last = root;
 
     selfIntersections.points.sort(function(a, b) {
       return a.s < b.s ? -1 : 1;
     });
 
-    selfIntersections.dedupe().each(function(p, c, n) {
+    var compare = function(a, b) {
+      if (belongTo(a.s, a.b, b.s, b.b)) {
+        return 'belongs';
+      } else if (contain(a.s, a.b, b.s, b.b)) {
+        return 'contains';
+      } else if (interfere(a.s, a.b, b.s, b.b)) {
+        return 'interferes'
+      } else {
+        return null;
+      }
+    }
+
+    var node_reparent = function(node, parent) {
+      if (node.parent) {
+        node.parent.children = node.parent.children.filter(function(n) {
+          return n !== node;
+        });
+      }
+
+      var oldParent = node.parent || null;
+      node.parent = parent;
+      node.depth = typeof parent.depth !== 'undefined' ? parent.depth + 1 : 0;
+      parent.children.push(node);
+      return oldParent;
+    };
+
+
+    selfIntersections.points.forEach(function(c) {
       c.children = [];
 
       var rb = belongTo(last.s, last.b, c.s, c.b);
@@ -486,26 +517,76 @@ Polygon.prototype = {
         'contain:', rc,
         'interfere:', ri
       );
+      if (rc) {
+        node_reparent(c, last);
+        last = c;
+      } else if (rb) {
+        // honestly, this should never happen since the array
+        // is sorted prior to coming here.
+        var parent = node_reparent(last, c);
+        node_reparent(c, parent);
 
-      if (rc || rb) {
-        c.depth = last.depth+1;
-        last.children.push(c);
+      } else if (ri) {
+        var parent = last.parent;
+        while (parent) {
+          var result = compare(parent, c)
+          if (!result) {
+            parent = parent.parent;
+          } else {
+            switch (result) {
+              case 'belongs':
+                console.error('unhandled belongs situation');
+              break;
+
+              case 'contains':
+                console.error('unhandled contains situation');
+              break;
+
+              case 'interferes':
+                console.error('interferes');
+              break;
+            }
+            break;
+          }
+          // console.warn('RESULT', );
+
+
+          // if (contain(parent.s, parent.b, c.s, c.p)) {
+          //   c.depth = parent.depth + 1;
+          //   parent.children.push(c);
+          //   c.parent = parent;
+          //   console.log('landed')
+          //   break;
+          // }
+          // parent = parent.parent;
+        }
+        console.log('parented', !!c.parent)
+
+        // c.depth = last.parent.depth + 1;
+        // last.parent.children = last.parent.children.filter(function(a) {
+        //   return a !== last;
+        // });
+
+        // c.children.push(last);
+        // last.parent.children.push(c);
+        // last.parent = c;
       } else {
-        c.depth = 1;
-        root.children.push(c);
+        // node_reparent(c, last);
+        // console.error('unhandled!')
+        // last = c;
       }
-      last = c;
+
     });
 
     console.log('TREE');
-
+console.log(root);
     var ret = []
     var that = this;
     var recurse = function(node) {
       var odd = !!(node.depth % 2);
 
       console.log(node.depth, odd)
-      console.log(new Array(node.depth).map(String).join(' '), node.toString())
+      console.log(new Array(node.depth*4).map(String).join(' '), node.toString())
       if (!odd) {
         var poly = [];
 
@@ -522,6 +603,7 @@ Polygon.prototype = {
         if (!odd) {
           // collect the child
           poly.push(child);
+          console.log('last child', !!node.children[i+1]);
           var childCollectTo = (node.children[i+1]) ?  node.children[i+1].bi : node.bi;
           console.log('from %s to %s', child.bi, childCollectTo);
           for (var j = child.bi; j<=childCollectTo; j++) {
