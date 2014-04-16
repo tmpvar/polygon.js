@@ -335,37 +335,71 @@ Polygon.prototype = {
       var r = delta / Math.sin(Math.acos(e1.dot(e2))/2);
       var d = e1.add(e2, true).normalize().multiply(r, true);
 
+      var angle = toTAU(e1.angleTo(e2));
       var o = e1.perpDot(e2) < 0 ? c.add(d, true) : c.subtract(d, true);
+
+      if (angle > TAU * .75 || angle < TAU * .25) {
+
+        o.computeSegments = angle;
+        c.color = "white"
+        c.radius = 3;
+      }
+
       o.point = c;
       res.push(o);
     });
 
-    var offsetPolygon = Polygon(res);
-    if (prune === false) {
-      return offsetPolygon;
+
+    var parline = function(a, b) {
+      var normal = a.subtract(b, true);
+
+      var angle = Vec2(1, 0).angleTo(normal);
+      var bisector = Vec2(delta, 0).rotate(angle + Math.PI/2);
+
+      bisector.add(b);
+
+      var cperp = bisector.add(normal, true);
+
+      var l = new Line2(bisector.x, bisector.y, cperp.x, cperp.y);
+      var n = a.add(normal, true);
+      var l2 = new Line2(a.x, a.y, n.x, n.y);
+      return l;
     }
-    var cleanLocal = [], skip = false;
+
+    var offsetPolygon = Polygon(res);
+    var ret = [];
+
+
     offsetPolygon.each(function(p, c, n, i) {
 
       var isect = segseg(c, c.point, n, n.point);
+      if (isect) {
 
-      if (!skip && isect) {
-        var n2 = offsetPolygon.point(i+2);
-        var a = new Line2(n2.x, n2.y, n.x, n.y);
-        var b = new Line2(p.x, p.y, c.x, c.y);
+        var pp = offsetPolygon.point(i-2);
+        var nn = offsetPolygon.point(i+2);
 
-        cleanLocal.push(a.intersect(b));
-        skip = true;
-      } else if (!skip) {
-        cleanLocal.push(c);
+        var ppline = parline(pp.point, p.point);
+        var pline = parline(p.point, c.point);
+        var nline = parline(c.point, n.point);
+        var nnline = parline(n.point, nn.point);
+
+        // ret.push(ppline.intersect(nline));
+        // ret.push(pline.intersect(nline));
+        // ret.push(ppline.intersect(pline));
+        // ret.push(nline.intersect(nnline));
+
+        var computed = pline.intersect(nnline);
+        computed.color = "yellow";
+        computed.point = c.point;
+
+        ret.push(computed);
+
       } else {
-        skip = false;
+        ret.push(c);
       }
-
     });
 
-    return Polygon(cleanLocal);
-
+    return ret.length ? Polygon(ret) : offsetPolygon;
   },
 
   line : function(idx) {
