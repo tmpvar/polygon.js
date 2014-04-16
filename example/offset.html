@@ -180,12 +180,27 @@
         } else {
           // TODO: this breaks at -110 because the first point is invalid
           // TODO: this breaks at 30 because of invalid 'interferes' handling
-          for (var i = -100; i<110; i += 10) {
+          for (var i = -200; i<200; i += 10) {
             if (i === 0) { continue; }
             var o = p.offset(i, true).simplify();
-            var selfi = o.pruneSelfIntersections()
+            var selfi = o.pruneSelfIntersections(function(point) {
 
-            // renderPolyPoints(o.selfIntersections());
+              // TODO: not properly handling global interference when
+              //       delta is positive - or this implementation is busted.
+              if (i > 0) {
+                return true;
+              }
+
+              var dtoclosest = p.closestPointTo(point).subtract(point, true).length();
+              var d = dtoclosest - Math.abs(i);
+              var valid = Math.round(d*1000)/1000 === 0;
+              if (!valid) {
+                console.error('NOT VALID', i, dtoclosest, d);
+              }
+              return valid;
+            });
+
+            //renderPolyPoints(o.selfIntersections());
 
             selfi.forEach(function(s, j) {
 
