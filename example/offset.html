@@ -119,12 +119,14 @@
       var dashY = dY / dashes;
 
       var q = 0;
+      var sx = start.x;
+      var sy = start.y;
       while (q++ < dashes) {
-        start.x += dashX;
-        start.y += dashY;
-        ctx[q % 2 == 0 ? 'moveTo' : 'lineTo'](start.x, start.y);
+        sx += dashX;
+        sy += dashY;
+        ctx[q % 2 == 0 ? 'moveTo' : 'lineTo'](sx, sy);
       }
-      ctx[q % 2 == 0 ? 'moveTo' : 'lineTo'](start.x, start.y);
+      ctx[q % 2 == 0 ? 'moveTo' : 'lineTo'](sx, sy);
     };
 
 
