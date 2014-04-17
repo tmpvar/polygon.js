@@ -2,6 +2,7 @@
 <head>
   <title>polygon.js - offset</title>
   <script type="text/javascript" src="../node_modules/onecolor/one-color-all-debug.js"></script>
+  <script type="text/javascript" src="dat.gui.js"></script>
   <script type="text/javascript" src="../node_modules/fc/fc.js"></script>
   <script type="text/javascript" src="../node_modules/vec2/vec2.js"></script>
   <script type="text/javascript" src="../node_modules/segseg/index.js"></script>
@@ -128,6 +129,14 @@
 
 
 
+    var config = { inner: -40, outer: -50 };
+    try {
+      config = JSON.parse(window.localStorage.getItem('offset-data'));
+    } catch (e) {}
+
+
+
+
     var ctx = fc(function() {
       var w = ctx.canvas.width;
       var h = ctx.canvas.height;
@@ -180,9 +189,14 @@
         } else {
           // TODO: this breaks at -110 because the first point is invalid
           // TODO: this breaks at 30 because of invalid 'interferes' handling
-          for (var i = -200; i<200; i += 10) {
+
+          for (var i = config.inner; i<config.outer; i += 30) {
             if (i === 0) { continue; }
             var o = p.offset(i, true).simplify();
+
+            renderPoly(o, .3);
+            continue;
+
             var selfi = o.pruneSelfIntersections(function(point) {
 
               // TODO: not properly handling global interference when
@@ -215,6 +229,18 @@
       ctx.restore();
 
     }, false);
+
+    var gui = new dat.GUI();
+    var updateValues = function() {
+      window.localStorage.setItem('offset-data', JSON.stringify(config));
+      ctx.dirty();
+    };
+
+    gui.add(config, 'inner', -200, 200).onChange(updateValues);
+    gui.add(config, 'outer', -200, 200).onChange(updateValues);
+
+
+
 
   </script>
 
