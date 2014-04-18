@@ -15,6 +15,10 @@ var toTAU = function(rads) {
   return rads;
 };
 
+var toDegrees = function(rads) {
+  return toTAU(rads) / TAU * 360;
+}
+
 var isArray = function (a) {
   return Object.prototype.toString.call(a) === "[object Array]";
 }
@@ -371,32 +375,46 @@ Polygon.prototype = {
       var d = e1.add(e2, true).normalize().multiply(r, true);
 
       var angle = toTAU(e1.angleTo(e2));
-      var o = e1.perpDot(e2) < 0 ? c.add(d, true) : c.subtract(d, true);
+      var invert = e1.perpDot(e2) < 0;
+      var o = invert ? c.add(d, true) : c.subtract(d, true);
 
       var bc = bisect(c, n);
-      var nc = bisect(n, this.point(i+2));
+      var nc = bisect(n, this.point(i+1));
+
+      var bcangle = toTAU(Vec2(1, 0).angleTo(bc));
+      var ncangle = toTAU(Vec2(1, 0).angleTo(nc));
+      var oangle = toTAU(Vec2(1, 0).angleTo(p.subtract(c, true)))
 
       var start = c.subtract(bc, true);
       var end = n.subtract(bc, true);
-
-      if (delta > 0) {
-        angle = TAU-angle;
-      }
 
       if (delta < 0) {
         if (angle <= TAU * .85 && angle >= TAU * .15) {
           collect(o, c, 'angle');
         }
-        collect(start, c); // edge offset
-        collect(end, n); // edge offset
-
       } else  {
-        if (angle <= TAU/4) {
+
+        var v = Vec2(1, 0);
+        var ae1 = v.angleTo(c.subtract(p, true));
+        var ae2 = v.angleTo(n.subtract(c, true))
+
+        var range = ae2-ae1;
+
+        if (range > TAU/4 && range < TAU * .85) {
+          var steps = 20;
+          var stepSize = range / steps;
+
+          var b = Vec2(delta, 0).rotate(oangle+TAU/4);
+          for (var i = 0; i<steps; i++) {
+            collect(c.add(b.rotate(stepSize), true))
+          }
+        } else {
           collect(o, c, 'angle');
         }
-        collect(start, c); // edge offset
-        collect(end, n); // edge offset
       }
+
+      collect(start, c); // edge offset
+      collect(end, n); // edge offset
     });
 
     var poly = Polygon(ret).simplify();
@@ -424,6 +442,7 @@ Polygon.prototype = {
         collect(Vec2.fromArray(ppnnn))
         continue;
       } else if (ppnn) {
+        ret.pop();
         i+=1;
         collect(Vec2.fromArray(ppnn));
         continue;
