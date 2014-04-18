@@ -459,8 +459,8 @@ Polygon.prototype = {
     var l = this.points.length+1;
     // TODO: use a faster algorithm. Bentley–Ottmann is a good first choice
     for (var i = 0; i<l; i++) {
-      var s = this.point(i-1);
-      var e = this.point(i);
+      var s = this.point(i);
+      var e = this.point(i+1);
 
       for (var i2 = i+1; i2<l; i2++) {
         var s2 = this.point(i2);
@@ -492,11 +492,12 @@ Polygon.prototype = {
 
   pruneSelfIntersections : function(validFn) {
     var selfIntersections = this.selfIntersections();
+    this.simplify();
+
     if (!selfIntersections.points.length) {
       return [this];
     }
 
-console.log('self isects', selfIntersections.points.length, selfIntersections.dedupe().toString())
     var belongTo = function(s1, b1, s2, b2) {
       return s1 > s2 && b1 < b2
     }
@@ -556,7 +557,7 @@ console.log('self isects', selfIntersections.points.length, selfIntersections.de
             // node.contains.forEach(function(contained) {
             //   node_reparent(contained, child)
             // });
-//            node_reparent(child, node);
+            // node_reparent(child, node);
             console.log(compare(child, node));
             return true;
             node_set_array(node.contains[0], 'contains', child);
@@ -588,13 +589,16 @@ console.log('self isects', selfIntersections.points.length, selfIntersections.de
     };
 
     // TODO: ensure the root node is valid
-    var root = this.point(0).clone();
+    var root = this.point(0);
 
     var points = selfIntersections.points.concat();
+
     var startCompareAt = 0;
+    var rootIsValid = validFn && validFn(root);
 
-    if (validFn && !validFn(root)) {
 
+    if (!rootIsValid) {//} || this.winding()) {
+      console.warn('SELECTING A NEW ROOT');
       var index = points.length-1;
       root = points[index];
       while (!validFn(root) && index--) {
@@ -606,6 +610,8 @@ console.log('self isects', selfIntersections.points.length, selfIntersections.de
         return [];
       }
 
+      points = points.slice(index-1);
+
     } else {
       root.s = 0;
       root.si = 0;
@@ -615,21 +621,26 @@ console.log('self isects', selfIntersections.points.length, selfIntersections.de
       points.unshift(root);
     }
 
+
     points.sort(function(a, b) {
       return a.s < b.s ? -1 : 1;
     });
 
+    // this.point(root.si).color = "#f0f"
+    // this.point(root.si).radius = 15;
+
     for (var i=1; i<points.length; i++) {
       if (!node_associate(points[i-1], points[i])) {
-        var parent = points[i-1].parent;
+        node_reparent(points[i], points[i-1]);
+        // var parent = points[i-1].parent;
 
-        while (parent) {
-          if (node_associate(parent, points[i])) {
-            console.log('missed, but found')
-            break;
-          }
-          parent = parent.parent;
-        }
+        // while (parent) {
+        //   if (node_associate(parent, points[i])) {
+        //     console.log('missed, but found')
+        //     break;
+        //   }
+        //   parent = parent.parent;
+        // }
       };
     }
 
@@ -637,70 +648,178 @@ console.log('self isects', selfIntersections.points.length, selfIntersections.de
 
     var polygons = [];
     var that = this;
-    var walk = function(node, depth) {
+    var walk1 = function(node, depth) {
       var odd = !!(depth%2)
+
       var contains = node.contains || [];
       var i;
       if (!odd) {
         var poly = [];
         var collect = function(n, id) {
-          console.log('collected', id || n.id, n.toArray());
+          console.log('collected', id || n.id, n.toArray(), 'line: ' + (new Error()).stack.split('\n')[2].split('js:').pop().split(':').shift());
           poly.push(n);
         }
 
         depth > 0 && collect(node, node.si + '->' + node.bi);
-console.log('contains.length', contains.length, contains.join(','), contains[0], node);
+        // console.log('contains.length', contains.length, contains.join(','), contains[0], node);
         if (contains.length) {
-          for (i=node.si; i<contains[0].si; i++) {
-            collect(that.points[i], 'first-' + i);
+          if (depth === 0) {
+            for (i=node.si; i<=contains[0].bi; i++) {
+              collect(that.points[i], 'first-' + i);
+            }
           }
-
           // Ok, here we're going to special case the situation where
           // we've had to move past the root node to start the collection
           // process.
-
-
           if (root.si !== 0) {
-            collect(node);
+            collect(node, 'root');
           }
 
           for (i=0; i<contains.length; i++) {
-            collect(contains[i]);
-            var next = contains[i+1];
-            var collectTo = next ? next.si : node.bi;
-            for (var j=contains[i].bi; j<collectTo; j++) {
-              collect(that.points[j], i + ' :: ' + j);
+            collect(contains[i], 'contains-' + i);
+
+            if (depth !== 0) {
+              var next = contains[i+1];
+              var collectTo = next ? next.si : node.bi;
+              for (var j=contains[i].bi; j<collectTo; j++) {
+                collect(that.points[j], i + ' :: ' + j);
+              }
             }
 
             if (contains[i].contains) {
-              console.log('contains', contains[i].contains, i, contains[i].contains.length);
+              //console.log('contains', contains[i].contains, i, contains[i].contains.length);
 
               for (var j=0; j<contains[i].contains.length; j++) {
-                console.log('WALKING', depth+2)
+                console.log('WALKING', depth+2, contains[i].contains[j])
                 walk(contains[i].contains[j], depth+2);
               }
             } else {
+              // Collect to the next contains
+              if (i === contains.length-1) {
 
-              console.log(node, contains[i]);
+                // for (var j = contains[i].bi; j<node.bi; j++) {
+                //   console.log('collect', that.point(j).toString())
+                //   collect(that.point(j));
+                // }
+
+                console.log('MISS', that.points.length, node.si, node.bi, contains[i].si, contains[i].bi);
+                console.log('poly length', poly.join(';'))
+              }
+
             }
             // no else here because the next phase is even
           }
 
-          collect(that.point(node.bi), node.id + '.b');
+          depth !== 0 && collect(that.point(node.bi), node.id + '.b');
         } else {
-          collect(node);
+          collect(node, 'node');
 
           for (var i = node.si; i<node.bi; i++) {
-            collect(that.point(i));
+            collect(that.point(i), 'node-' + i);
           }
-          collect(that.point(node.bi));
+          collect(that.point(node.bi), 'node-bi-' + node.bi);
         }
 
-        poly.length > 2 && polygons.push(new Polygon(poly));
+        if (poly.length > 2) {
+          poly[0].color = "green";
+          poly[0].radius = 10;
+          console.error('POLY', poly.join());
+          var cleanedPolygon = new Polygon(poly);
+          //if (!cleanedPolygon.winding()) {
+            polygons.push(cleanedPolygon);
+          //}
+        } else {
+          console.log('miss because size', poly.join(','))
+        }
       }
     };
 
-    walk(root, 0)
+    var walk = function(node) {
+
+      var poly = [];
+      var collect = function(n, id) {
+        console.log('collected', id || n.id, n.toString(), 'line: ' + (new Error()).stack.split('\n')[2].split('js:').pop().split(':').shift());
+        poly.push(n);
+      };
+
+      var contains = node.contains || [];
+
+      if (contains.length) {
+        var i, j;
+
+        node.parent && collect(node);
+
+        for (j = 0; j<contains.length; j++) {
+          // TODO: need to i<=contains[i] for the right
+          //       but it breaks other stuff
+          for (i = node.si; i<=contains[j].si; i++) {
+            collect(that.points[i], 'up to next');
+          }
+
+          if (node.si === 0) {
+            poly.pop();
+            collect(that.points[contains[j].si]);
+          } else if (!node.parent) {
+            poly.pop();
+            collect(node);
+          }
+
+          if (contains[j].contains) {
+            for (var k = 0; k<contains[j].contains.length; k++) {
+              walk(contains[j].contains[k]);
+            }
+          }
+        }
+
+        collect(contains[contains.length-1], 'isect point');
+
+        for (i = contains[contains.length-1].bi+1; i<=node.b; i++) {
+          collect(that.points[i], 'back to node');
+        }
+
+      } else {
+
+
+        console.warn('TODO', node.si, node.bi, node.parent.si, node.parent.bi);
+
+        if (node.parent.bi - node.bi <= 1 && node.parent.si - node.si <= 1) {
+
+          for (var i = node.parent.bi; i <= node.si; i++) {
+            collect(that.points[i], 'TODO');
+          }
+
+          for (var i = node.si-1; i<=node.bi; i++) {
+            collect(that.points[i], 'TODO');
+          }
+
+
+          collect(node);
+
+
+          for (var i = node.bi; i <= parent.si; i++) {
+            collect(that.points[i], 'TODO');
+          }
+
+        } else {
+
+          for (var i = node.si; i<=node.bi; i++) {
+            collect(that.points[i], 'TODO');
+          }
+
+          collect(node);
+        }
+      }
+console.log(poly.join(';'));
+      var polygon = new Polygon(poly).simplify();
+      if (!polygon.winding()) {
+        polygons.push(polygon);
+      } else {
+        console.log('failed due to winding')
+      }
+
+    };
+
+    walk(root)
     return polygons;
   },
 
