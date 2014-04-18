@@ -699,17 +699,28 @@ Polygon.prototype = {
         }
 
       } else {
+
+        // the last self intersection was on the current segment
         if (node.parent.bi - node.bi <= 1 && node.parent.si - node.si <= 1) {
 
-          for (var i = node.parent.bi; i <= node.si; i++) {
-            collect(that.points[i], 'TODO');
-          }
-
-          for (var i = node.si; i<=node.bi; i++) {
+          for (var i = node.parent.bi-1; i <= node.si; i++) {
             collect(that.points[i], 'TODO');
           }
 
           collect(node);
+
+          // Adding overhead, but ensuring proper offsetting
+          // this fixes a case where the polygon has an ear
+          // that actually protrudes into the offset area.
+          var nodeStart = node.si;
+          if (validFn && !validFn(that.points[i])) {
+            nodeStart++;
+          }
+
+          for (var i = nodeStart; i<=node.bi; i++) {
+            collect(that.points[i], 'TODO');
+          }
+
 
           for (var i = node.bi; i <= parent.si; i++) {
             collect(that.points[i], 'TODO');
