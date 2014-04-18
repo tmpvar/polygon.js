@@ -68,7 +68,8 @@
         var origWidth = ctx.lineWidth;
         ctx.closePath();
         ctx.lineWidth = width || 1;
-
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
         ctx.strokeStyle = hsl(angle, .75, .65);
         ctx.stroke();
         ctx.lineWidth = origWidth;
@@ -76,14 +77,16 @@
         ctx.strokeStyle =  hsl(angle, 1, .65);
         poly.points.forEach(function(c) {
           ctx.beginPath();
-            ctx.arc(c.x, c.y, (c.radius || .5), Math.PI*2, false);
             var orig = ctx.strokeStyle;
 
+
             if (c.color) {
+              ctx.arc(c.x, c.y, (c.radius || .5), Math.PI*2, false);
               ctx.strokeStyle = c.color;
+              ctx.stroke();
             }
 
-            ctx.stroke();
+
 
           if (c.point && dashed !== false) {
             dashedLine(ctx, c, c.point, 4);
@@ -129,7 +132,7 @@
 
 
     var config = {
-      inner: -40,
+      inner: -200,
       outer: -50,
       step: 10,
       renderPoly: false,
@@ -138,7 +141,7 @@
       pruneSelfIntersections: false
     };
     try {
-      obj = JSON.parse(window.localStorage.getItem('offset-data'));
+      obj = JSON.parse(window.localStorage.getItem('offset-data') || '{}') || {};
       Object.keys(obj).forEach(function(k) {
         config[k] = obj[k];
       });
@@ -148,6 +151,7 @@
 
 
     var ctx = fc(function() {
+
       var w = ctx.canvas.width;
       var h = ctx.canvas.height;
 
@@ -155,7 +159,7 @@
       ctx.fillRect(0, 0, w, h);
 
       ctx.save();
-        ctx.translate(w/2 - 200, h/2 - 200);
+        ctx.translate(w/2 - 200, h/2 - 100);
         ctx.scale(1, -1);
 
         ctx.beginPath()
@@ -205,7 +209,7 @@
             var o = p.offset(i, true);
 
             config.simplify && o.simplify();
-            renderPolyPoints(o, 'blue', 3);
+//            renderPolyPoints(o, 'blue', 1);
             config.renderPoly && renderPoly(o, .3);
             config.renderSelfIntersections && renderPolyPoints(o.selfIntersections());
 
@@ -215,16 +219,18 @@
 
                 // TODO: not properly handling global interference when
                 //       delta is positive - or this implementation is busted.
-                // if (i > 0) {
-                //   return true;
-                // }
+
 
                 var dtoclosest = p.closestPointTo(point).subtract(point, true).length();
                 var d = dtoclosest - Math.abs(i);
                 var valid = Math.round(d*1000)/1000 === 0;
 
-                if ((i > 0 && !p.containsPoint(point)) || (i<0 && p.containsPoint(point))) {
-                  return valid;
+                if (i > 0 && d >= 0) {
+                  valid = true;
+                }
+
+                if (valid) {
+                  return (i > 0 && !p.containsPoint(point)) || (i<0 && p.containsPoint(point));
                 } else {
                   console.error('NOT VALID', i, dtoclosest, d);
                 }
