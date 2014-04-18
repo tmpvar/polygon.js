@@ -336,29 +336,13 @@ Polygon.prototype = {
   },
 
   offset : function(delta) {
+    var bisect = function(a, b) {
+      var diff = a.subtract(b, true);
+      var angle = toTAU(Vec2(1, 0).angleTo(diff));
+      var bisector = Vec2(delta, 0).rotate(angle - Math.PI/2);
 
-    var res = [];
-    this.rewind(false).simplify().each(function(p, c, n, i) {
-      var e1 = c.subtract(p, true).normalize();
-      var e2 = c.subtract(n, true).normalize();
-
-      var r = delta / Math.sin(Math.acos(e1.dot(e2))/2);
-      var d = e1.add(e2, true).normalize().multiply(r, true);
-
-      var angle = toTAU(e1.angleTo(e2));
-      var o = e1.perpDot(e2) < 0 ? c.add(d, true) : c.subtract(d, true);
-
-      if (angle > TAU * .75 || angle < TAU * .25) {
-
-        o.computeSegments = angle;
-        c.color = "white"
-        c.radius = 3;
-      }
-
-      o.point = c;
-      res.push(o);
-    });
-
+      return bisector;
+    };
 
     var parline = function(a, b) {
       var normal = a.subtract(b, true);
@@ -376,40 +360,138 @@ Polygon.prototype = {
       return l;
     }
 
-    var offsetPolygon = Polygon(res);
     var ret = [];
-
-
-    offsetPolygon.each(function(p, c, n, i) {
-
-      var isect = segseg(c, c.point, n, n.point);
-      if (isect) {
-
-        var pp = offsetPolygon.point(i-2);
-        var nn = offsetPolygon.point(i+2);
-
-        var ppline = parline(pp.point, p.point);
-        var pline = parline(p.point, c.point);
-        var nline = parline(c.point, n.point);
-        var nnline = parline(n.point, nn.point);
-
-        // ret.push(ppline.intersect(nline));
-        // ret.push(pline.intersect(nline));
-        // ret.push(ppline.intersect(pline));
-        // ret.push(nline.intersect(nnline));
-
-        var computed = pline.intersect(nnline);
-        computed.color = "yellow";
-        computed.point = c.point;
-
-        ret.push(computed);
-
-      } else {
-        ret.push(c);
+    var collect = function(a, point, type) {
+      if (a) {
+        ret.push(a);
+        if (point) {
+          a.point = point;
+        }
+        a.type = type || 'edge';
       }
+    }
+
+    var lines = [];
+    this.rewind(false).simplify().each(function(p, c, n, i) {
+
+      var e1 = c.subtract(p, true).normalize();
+      var e2 = c.subtract(n, true).normalize();
+
+      var r = delta / Math.sin(Math.acos(e1.dot(e2))/2);
+      var d = e1.add(e2, true).normalize().multiply(r, true);
+
+      var angle = toTAU(e1.angleTo(e2));
+      var o = e1.perpDot(e2) < 0 ? c.add(d, true) : c.subtract(d, true);
+
+      var bc = bisect(c, n);
+      var nc = bisect(n, this.point(i+2));
+
+      var start = c.subtract(bc, true);
+      var end = n.subtract(bc, true);
+
+      if (angle <= TAU * .85 && angle >= TAU * .15) {
+        collect(o, c, 'angle');
+      }
+
+      collect(start, c); // edge offset
+      collect(end, n); // edge offset
+
+      //lines.push(new Line2(start.x, start.y, end.x, end.y));
+
+
+      // if (angle > TAU * .75 || angle < TAU * .25) {
+
+      //   o.computeSegments = angle;
+      //   c.color = "white"
+      //   c.radius = 3;
+      // }
+
     });
 
-    return ret.length ? Polygon(ret) : offsetPolygon;
+    var poly = Polygon(ret).simplify();
+    var l = poly.points.length;
+
+
+    // TODO: optimize by only attempting isect when
+    //       on an edge offset
+    ret = [];
+    for (var i=0; i<l; i++) {
+      var pp = poly.point(i-2);
+      var p = poly.point(i-1);
+      var c = poly.point(i);
+      var n = poly.point(i+1);
+      var nn = poly.point(i+2);
+      var nnn = poly.point(i+3);
+
+      var ppnn = segseg(pp, p, n, nn);
+      var ppnnn = segseg(pp, p, nnn, nn);
+      var pcnn = segseg(p, c, n, nn);
+      var ppcn = segseg(p, pp, n, c);
+console.log(ppnn, pcnn, ppcn, ppnnn);
+
+      if (ppnn) {
+        i+=1;
+        collect(Vec2.fromArray(ppnn));
+        continue;
+      } else if (pcnn) {
+        i+=1;
+        collect(Vec2.fromArray(pcnn))
+
+        continue;
+      } else if (ppnnn) {
+        i+=2;
+        collect(Vec2.fromArray(ppnnn))
+        continue;
+      }
+
+      collect(c);
+    }
+
+
+
+    // for (var i = 0; i<lines.length; i++) {
+    //   var ni = (i+1) % lines.length;
+    //   console.log(i, ni)
+    //   ret.push(lines[i].intersect(lines[ni]));
+    // }
+
+
+
+
+    // var offsetPolygon = Polygon(res);
+    // var ret = [];
+
+
+    // offsetPolygon.each(function(p, c, n, i) {
+
+    //   var isect = segseg(c, c.point, n, n.point);
+    //   if (isect) {
+
+    //     var pp = offsetPolygon.point(i-2);
+    //     var nn = offsetPolygon.point(i+2);
+
+    //     var ppline = parline(pp.point, p.point);
+    //     var pline = parline(p.point, c.point);
+    //     var nline = parline(c.point, n.point);
+    //     var nnline = parline(n.point, nn.point);
+
+    //     // ret.push(ppline.intersect(nline));
+    //     // ret.push(pline.intersect(nline));
+    //     // ret.push(ppline.intersect(pline));
+    //     // ret.push(nline.intersect(nnline));
+
+    //     var computed = pline.intersect(nnline);
+    //     computed.color = "yellow";
+    //     computed.point = c.point;
+
+    //     ret.push(computed);
+
+    //   } else {
+    //     ret.push(c);
+    //   }
+    // });
+
+    return Polygon(ret).simplify();
   },
 
   line : function(idx) {
