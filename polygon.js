@@ -536,7 +536,6 @@ Polygon.prototype = {
       }
 
       var relationship = compare(node, child);
-      console.log('%s:%s -> %s:%s :: %s', node.id, node.toString(), child.id, child.toString(), relationship);
       if (relationship) {
 
         if (relationship === 'contains') {
@@ -594,11 +593,8 @@ Polygon.prototype = {
     var points = selfIntersections.points.concat();
 
     var startCompareAt = 0;
-    var rootIsValid = validFn && validFn(root);
 
-
-    if (!rootIsValid) {//} || this.winding()) {
-      console.warn('SELECTING A NEW ROOT');
+    if (validFn && !validFn(root)) {
       var index = points.length-1;
       root = points[index];
       while (!validFn(root) && index--) {
@@ -621,13 +617,9 @@ Polygon.prototype = {
       points.unshift(root);
     }
 
-
     points.sort(function(a, b) {
       return a.s < b.s ? -1 : 1;
     });
-
-    // this.point(root.si).color = "#f0f"
-    // this.point(root.si).radius = 15;
 
     for (var i=1; i<points.length; i++) {
       if (!node_associate(points[i-1], points[i])) {
@@ -644,102 +636,18 @@ Polygon.prototype = {
       };
     }
 
-    console.log('ROOT NODE', root);
-
     var polygons = [];
     var that = this;
-    var walk1 = function(node, depth) {
-      var odd = !!(depth%2)
 
-      var contains = node.contains || [];
-      var i;
-      if (!odd) {
-        var poly = [];
-        var collect = function(n, id) {
-          console.log('collected', id || n.id, n.toArray(), 'line: ' + (new Error()).stack.split('\n')[2].split('js:').pop().split(':').shift());
-          poly.push(n);
-        }
-
-        depth > 0 && collect(node, node.si + '->' + node.bi);
-        // console.log('contains.length', contains.length, contains.join(','), contains[0], node);
-        if (contains.length) {
-          if (depth === 0) {
-            for (i=node.si; i<=contains[0].bi; i++) {
-              collect(that.points[i], 'first-' + i);
-            }
-          }
-          // Ok, here we're going to special case the situation where
-          // we've had to move past the root node to start the collection
-          // process.
-          if (root.si !== 0) {
-            collect(node, 'root');
-          }
-
-          for (i=0; i<contains.length; i++) {
-            collect(contains[i], 'contains-' + i);
-
-            if (depth !== 0) {
-              var next = contains[i+1];
-              var collectTo = next ? next.si : node.bi;
-              for (var j=contains[i].bi; j<collectTo; j++) {
-                collect(that.points[j], i + ' :: ' + j);
-              }
-            }
-
-            if (contains[i].contains) {
-              //console.log('contains', contains[i].contains, i, contains[i].contains.length);
-
-              for (var j=0; j<contains[i].contains.length; j++) {
-                console.log('WALKING', depth+2, contains[i].contains[j])
-                walk(contains[i].contains[j], depth+2);
-              }
-            } else {
-              // Collect to the next contains
-              if (i === contains.length-1) {
-
-                // for (var j = contains[i].bi; j<node.bi; j++) {
-                //   console.log('collect', that.point(j).toString())
-                //   collect(that.point(j));
-                // }
-
-                console.log('MISS', that.points.length, node.si, node.bi, contains[i].si, contains[i].bi);
-                console.log('poly length', poly.join(';'))
-              }
-
-            }
-            // no else here because the next phase is even
-          }
-
-          depth !== 0 && collect(that.point(node.bi), node.id + '.b');
-        } else {
-          collect(node, 'node');
-
-          for (var i = node.si; i<node.bi; i++) {
-            collect(that.point(i), 'node-' + i);
-          }
-          collect(that.point(node.bi), 'node-bi-' + node.bi);
-        }
-
-        if (poly.length > 2) {
-          poly[0].color = "green";
-          poly[0].radius = 10;
-          console.error('POLY', poly.join());
-          var cleanedPolygon = new Polygon(poly);
-          //if (!cleanedPolygon.winding()) {
-            polygons.push(cleanedPolygon);
-          //}
-        } else {
-          console.log('miss because size', poly.join(','))
-        }
-      }
-    };
+    var queue = [[root]];
 
     var walk = function(node) {
-
       var poly = [];
       var collect = function(n, id) {
-        console.log('collected', id || n.id, n.toString(), 'line: ' + (new Error()).stack.split('\n')[2].split('js:').pop().split(':').shift());
-        poly.push(n);
+        if (n) {
+          //console.log('collected', id || n.id, n.toString(), 'line: ' + (new Error()).stack.split('\n')[2].split('js:').pop().split(':').shift());
+          poly.push(n);
+        }
       };
 
       var contains = node.contains || [];
@@ -763,12 +671,6 @@ Polygon.prototype = {
             poly.pop();
             collect(node);
           }
-
-          if (contains[j].contains) {
-            for (var k = 0; k<contains[j].contains.length; k++) {
-              walk(contains[j].contains[k]);
-            }
-          }
         }
 
         collect(contains[contains.length-1], 'isect point');
@@ -778,23 +680,17 @@ Polygon.prototype = {
         }
 
       } else {
-
-
-        console.warn('TODO', node.si, node.bi, node.parent.si, node.parent.bi);
-
         if (node.parent.bi - node.bi <= 1 && node.parent.si - node.si <= 1) {
 
           for (var i = node.parent.bi; i <= node.si; i++) {
             collect(that.points[i], 'TODO');
           }
 
-          for (var i = node.si-1; i<=node.bi; i++) {
+          for (var i = node.si; i<=node.bi; i++) {
             collect(that.points[i], 'TODO');
           }
 
-
           collect(node);
-
 
           for (var i = node.bi; i <= parent.si; i++) {
             collect(that.points[i], 'TODO');
@@ -809,17 +705,28 @@ Polygon.prototype = {
           collect(node);
         }
       }
-console.log(poly.join(';'));
-      var polygon = new Polygon(poly).simplify();
+
+      var polygon = new Polygon(poly);
       if (!polygon.winding()) {
         polygons.push(polygon);
+        return true;
       } else {
-        console.log('failed due to winding')
+        return false
       }
-
     };
 
-    walk(root)
+    // TODO: this is decent, but it needs to be a breadth
+    //       first search in order to be robust.
+    //
+    //       Why? well, any node on the tree can have multiple
+    //       children which means the polygon spans multiple
+    //       self-intersections.  This implementation does not
+    //       handle this.
+    for (var i=0; i<points.length; i+=2) {
+      if (!walk(points[i])) {
+        i--;
+      }
+    }
     return polygons;
   },
 
