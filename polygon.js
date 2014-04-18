@@ -737,7 +737,7 @@ Polygon.prototype = {
       }
 
       var polygon = new Polygon(poly);
-      if (!polygon.winding()) {
+      if ((!polygon.winding() || !node.contains)) {
         polygons.push(polygon);
         return true;
       } else {
