@@ -136,6 +136,7 @@
       outer: -50,
       step: 10,
       renderPoly: false,
+      renderPoints: false,
       simplify: false,
       renderSelfIntersections: true,
       pruneSelfIntersections: false
@@ -209,7 +210,7 @@
             var o = p.offset(i, true);
 
             config.simplify && o.simplify();
-//            renderPolyPoints(o, 'blue', 1);
+            config.renderPoints && renderPolyPoints(o, 'blue', 1);
             config.renderPoly && renderPoly(o, .3);
             config.renderSelfIntersections && renderPolyPoints(o.selfIntersections());
 
@@ -263,6 +264,7 @@
     gui.add(config, 'step', 1, 200).onChange(updateValues);
     gui.add(config, 'renderSelfIntersections', false).onChange(updateValues);
     gui.add(config, 'renderPoly', false).onChange(updateValues);
+    gui.add(config, 'renderPoints', false).onChange(updateValues);
     gui.add(config, 'simplify', false).onChange(updateValues);
     gui.add(config, 'pruneSelfIntersections', false).onChange(updateValues);
 
