@@ -404,9 +404,11 @@ Polygon.prototype = {
           var steps = 20;
           var stepSize = range / steps;
 
-          var b = Vec2(delta, 0).rotate(oangle+TAU/4);
+          var b = new Vec2(delta, 0).rotate(oangle+TAU/4);
           for (var i = 0; i<steps; i++) {
-            collect(c.add(b.rotate(stepSize), true))
+            var r = c.add(b.clone().rotate(stepSize*i), true);
+
+            collect(r);
           }
         } else {
           collect(o, c, 'angle');
@@ -449,7 +451,6 @@ Polygon.prototype = {
       } else if (pcnn) {
         i+=1;
         collect(Vec2.fromArray(pcnn))
-
         continue;
       }
 
@@ -490,7 +491,6 @@ Polygon.prototype = {
 
         var isect = segseg(s, e, s2, e2);
 
-
         // self-intersection
         if (isect && isect !== true) {
           var vec = Vec2.fromArray(isect);
@@ -505,7 +505,7 @@ Polygon.prototype = {
         }
       }
     }
-    var poly = Polygon(ret).clean();
+    var poly = Polygon(ret);
     return poly;
   },
 
