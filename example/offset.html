@@ -56,16 +56,13 @@
       var a = Array.isArray(polygons) ? polygons : [polygons];
 
       a.forEach(function(poly) {
-        poly.clean()
-        poly.simplify();
-
         if (!poly.points.length || !poly.point(0)) {
           return;
         }
 
         ctx.beginPath();
           ctx.moveTo(poly.point(0).x, poly.point(0).y);
-          poly.each(function(l, c) {
+          poly.points.forEach(function(c) {
             ctx.lineTo(c.x, c.y);
           });
         var origWidth = ctx.lineWidth;
@@ -77,7 +74,7 @@
         ctx.lineWidth = origWidth;
 
         ctx.strokeStyle =  hsl(angle, 1, .65);
-        poly.each(function(l, c) {
+        poly.points.forEach(function(c) {
           ctx.beginPath();
             ctx.arc(c.x, c.y, (c.radius || .5), Math.PI*2, false);
             var orig = ctx.strokeStyle;
@@ -101,7 +98,7 @@
     var renderPolyPoints = function(polygon, color, radius) {
       polygon.points.forEach(function(point) {
         ctx.beginPath();
-          ctx.arc(point.x, point.y, radius || 5, Math.PI*2, false);
+          ctx.arc(point.x, point.y, point.radius || radius || 5, Math.PI*2, false);
           ctx.strokeStyle = color || 'red';
           ctx.stroke();
       });
@@ -131,12 +128,23 @@
 
 
 
-    var config = { inner: -40, outer: -50 };
+    var config = {
+      inner: -40,
+      outer: -50,
+      step: 10,
+      renderPoly: false,
+      simplify: false,
+      renderSelfIntersections: true,
+      pruneSelfIntersections: false
+    };
     try {
-      config = JSON.parse(window.localStorage.getItem('offset-data'));
-    } catch (e) {}
-
-
+      obj = JSON.parse(window.localStorage.getItem('offset-data'));
+      Object.keys(obj).forEach(function(k) {
+        config[k] = obj[k];
+      });
+    } catch (e) {
+      throw e;
+    }
 
 
     var ctx = fc(function() {
@@ -192,37 +200,42 @@
           // TODO: this breaks at -110 because the first point is invalid
           // TODO: this breaks at 30 because of invalid 'interferes' handling
 
-          for (var i = config.inner; i<config.outer; i += 30) {
+          for (var i = config.inner; i<config.outer; i += config.step || 10) {
             if (i === 0) { continue; }
-            var o = p.offset(i, true).simplify();
+            var o = p.offset(i, true);
 
-            renderPoly(o, .3);
-            continue;
+            config.simplify && o.simplify();
+            renderPolyPoints(o, 'blue', 3);
+            config.renderPoly && renderPoly(o, .3);
+            config.renderSelfIntersections && renderPolyPoints(o.selfIntersections());
 
-            var selfi = o.pruneSelfIntersections(function(point) {
+            if (config.pruneSelfIntersections) {
 
-              // TODO: not properly handling global interference when
-              //       delta is positive - or this implementation is busted.
-              if (i > 0) {
-                return true;
-              }
+              var selfi = o.pruneSelfIntersections(function(point) {
 
-              var dtoclosest = p.closestPointTo(point).subtract(point, true).length();
-              var d = dtoclosest - Math.abs(i);
-              var valid = Math.round(d*1000)/1000 === 0;
-              if (!valid) {
-                console.error('NOT VALID', i, dtoclosest, d);
-              }
-              return valid;
-            });
+                // TODO: not properly handling global interference when
+                //       delta is positive - or this implementation is busted.
+                // if (i > 0) {
+                //   return true;
+                // }
 
-            //renderPolyPoints(o.selfIntersections());
+                var dtoclosest = p.closestPointTo(point).subtract(point, true).length();
+                var d = dtoclosest - Math.abs(i);
+                var valid = Math.round(d*1000)/1000 === 0;
 
-            selfi.forEach(function(s, j) {
+                if ((i > 0 && !p.containsPoint(point)) || (i<0 && p.containsPoint(point))) {
+                  return valid;
+                } else {
+                  console.error('NOT VALID', i, dtoclosest, d);
+                }
+              });
 
-              // renderPolyPoints(s, 'green', 2);
-              renderPoly(s, i/100 - j/selfi.length, false);
-            });
+              selfi.forEach(function(s, j) {
+
+                // renderPolyPoints(s, 'green', 2);
+                renderPoly(s.simplify(), i/100 - j/selfi.length, false);
+              });
+            }
           }
         }
 
@@ -232,14 +245,20 @@
 
     }, false);
 
-    var gui = new dat.GUI();
+    var gui = new dat.GUI({ });
     var updateValues = function() {
+      console.clear();
       window.localStorage.setItem('offset-data', JSON.stringify(config));
       ctx.dirty();
     };
 
     gui.add(config, 'inner', -200, 200).onChange(updateValues);
     gui.add(config, 'outer', -200, 200).onChange(updateValues);
+    gui.add(config, 'step', 1, 200).onChange(updateValues);
+    gui.add(config, 'renderSelfIntersections', false).onChange(updateValues);
+    gui.add(config, 'renderPoly', false).onChange(updateValues);
+    gui.add(config, 'simplify', false).onChange(updateValues);
+    gui.add(config, 'pruneSelfIntersections', false).onChange(updateValues);
 
 
 
