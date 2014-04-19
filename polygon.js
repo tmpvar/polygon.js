@@ -366,7 +366,7 @@ Polygon.prototype = {
     }
 
     var lines = [];
-    this.rewind(false).simplify().each(function(p, c, n, i) {
+    this.rewind(false).each(function(p, c, n, i) {
 
       var e1 = c.subtract(p, true).normalize();
       var e2 = c.subtract(n, true).normalize();
@@ -513,7 +513,6 @@ Polygon.prototype = {
 
   pruneSelfIntersections : function(validFn) {
     var selfIntersections = this.selfIntersections();
-    this.simplify();
 
     if (!selfIntersections.points.length) {
       return [this];
@@ -697,7 +696,7 @@ Polygon.prototype = {
         for (j = 0; j<contains.length; j++) {
           // TODO: need to i<=contains[i] for the right
           //       but it breaks other stuff
-          var startPoint = contains[j].bi;
+          var startPoint = contains[j].bi+1;
           var endPoint = j<contains.length-1 ? contains[j+1].si : node.bi;
 
           collect(contains[j], 'root node collect ' + contains[j].si);
