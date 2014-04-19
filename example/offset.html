@@ -240,6 +240,7 @@
               selfi.forEach(function(s, j) {
 
                 // renderPolyPoints(s, 'green', 2);
+                // TODO: without this simplify, some polygons have hairs
                 renderPoly(s.simplify(), i/100 - j/selfi.length, false);
               });
             }
