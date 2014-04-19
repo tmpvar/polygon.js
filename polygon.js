@@ -374,6 +374,11 @@ Polygon.prototype = {
       var r = delta / Math.sin(Math.acos(e1.dot(e2))/2);
       var d = e1.add(e2, true).normalize().multiply(r, true);
 
+      // If the offset generates an invalid length, skip it.
+      if (d.lengthSquared() === 0) {
+        return;
+      }
+
       var angle = toTAU(e1.angleTo(e2));
       var invert = e1.perpDot(e2) < 0;
       var o = invert ? c.add(d, true) : c.subtract(d, true);
