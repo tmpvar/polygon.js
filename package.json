@@ -13,7 +13,7 @@
   },
   "devDependencies": {
     "istanbul": "~0.2.4",
-    "fc": "^0.1.5",
+    "fc": "^0.1.6",
     "onecolor": "^2.4.0"
   },
   "scripts": {
