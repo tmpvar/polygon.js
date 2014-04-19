@@ -754,15 +754,29 @@ Polygon.prototype = {
       }
 
       var polygon = new Polygon(poly);
-      if ((!polygon.winding() || !node.contains)) {
 
-        if (!node.contains) {
-          polygon.points = polygon.points.filter(validFn);
-          if (points.length < 3) {
-            return;
-          }
+      // TODO: this test is defective.
+      //
+      //       A: filter invalid points - this resolves
+      //          the issue to some extent, but causes
+      //          other issues (i.e. jumping across the boundaries)
+      //
+      //       B: don't rely on polygon winding, and instead
+      //          find a way to reliably determine if the polygon is an ear
+      //
+      //       C: track the winding of the parent feature. If the resulting poly
+      //          does not match it's winding then it's invalid.
+
+      var mapping = polygon.points.map(function(p) {
+        if (p.point) {
+          return p.point;
         }
+      }).filter(Boolean);
 
+
+      var sourceWinding = Polygon(mapping).winding();
+
+      if (sourceWinding === polygon.winding()) {
         polygons.push(polygon);
         return true;
       } else {
