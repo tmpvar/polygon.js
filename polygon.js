@@ -440,17 +440,19 @@ Polygon.prototype = {
       var ppcn = segseg(p, pp, n, c);
 
       if (ppnnn) {
+        console.log(ppnnn)
         i+=2;
-        collect(Vec2.fromArray(ppnnn))
+        collect(Vec2.fromArray(ppnnn), c.point)
         continue;
-      } else if (ppnn) {
+      } else if (ppnn && delta < 0) {
+        // TODO: this breaks the center, but allows the left to work
         ret.pop();
         i+=1;
-        collect(Vec2.fromArray(ppnn));
+        collect(Vec2.fromArray(ppnn), c.point);
         continue;
       } else if (pcnn) {
         i+=1;
-        collect(Vec2.fromArray(pcnn))
+        collect(Vec2.fromArray(pcnn), c.point)
         continue;
       }
 
@@ -642,16 +644,15 @@ Polygon.prototype = {
 
     for (var i=1; i<points.length; i++) {
       if (!node_associate(points[i-1], points[i])) {
-        node_reparent(points[i], points[i-1]);
-        // var parent = points[i-1].parent;
+        var parent = points[i-1].parent;
 
-        // while (parent) {
-        //   if (node_associate(parent, points[i])) {
-        //     console.log('missed, but found')
-        //     break;
-        //   }
-        //   parent = parent.parent;
-        // }
+        while (parent) {
+          if (node_associate(parent, points[i])) {
+            console.log('missed, but found')
+            break;
+          }
+          parent = parent.parent;
+        }
       };
     }
 
@@ -659,6 +660,11 @@ Polygon.prototype = {
     var that = this;
 
     var queue = [[root]];
+
+    var plan = function(a, b) {
+      console.warn('collection plan %s -> %s', a, b);
+    }
+
 
     var walk = function(node) {
       var poly = [];
@@ -674,34 +680,46 @@ Polygon.prototype = {
       if (contains.length) {
         var i, j;
 
-        node.parent && collect(node);
+        // If there's a parent we're not going to collect completely around
+        // to this node.  So add it now.
+        node.parent && collect(node, 'collect node if it has a parent');
+        plan(node.si, contains[0].si);
+
+        for (i = node.si; i<=contains[0].si; i++) {
+          collect(that.points[i], 'up to next: ' + i);
+        }
+
+        if (node.si !== 0 && !node.parent) {
+          poly.pop();
+          collect(node, 'first collection is not root');
+        }
 
         for (j = 0; j<contains.length; j++) {
           // TODO: need to i<=contains[i] for the right
           //       but it breaks other stuff
-          for (i = node.si; i<=contains[j].si; i++) {
-            collect(that.points[i], 'up to next');
-          }
+          var startPoint = contains[j].bi;
+          var endPoint = j<contains.length-1 ? contains[j+1].si : node.bi;
 
-          if (node.si === 0) {
-            poly.pop();
-            collect(that.points[contains[j].si]);
-          } else if (!node.parent) {
-            poly.pop();
-            collect(node);
+          collect(contains[j], 'root node collect ' + contains[j].si);
+
+          plan(startPoint, endPoint);
+          for (i = startPoint; i<=endPoint; i++) {
+            collect(that.points[i], 'contains[' + j + '] ' + i);
           }
+          startPoint = contains[j].si
         }
 
-        collect(contains[contains.length-1], 'isect point');
-
-        for (i = contains[contains.length-1].bi+1; i<=node.b; i++) {
-          collect(that.points[i], 'back to node');
-        }
+        // if (contains.length === 1) {
+        //   collect(contains[contains.length-1]);
+        //   for (i = contains[contains.length-1].bi; i<=node.bi; i++) {
+        //     collect(that.points[i], 'up to next: ' + i);
+        //   }
+        // }
 
       } else {
 
         // the last self intersection was on the current segment
-        if (node.parent.bi - node.bi <= 1 && node.parent.si - node.si <= 1) {
+        if (node.parent && node.parent.bi - node.bi <= 1 && node.parent.si - node.si <= 1) {
 
           for (var i = node.parent.bi-1; i <= node.si; i++) {
             collect(that.points[i], 'TODO');
@@ -721,8 +739,7 @@ Polygon.prototype = {
             collect(that.points[i], 'TODO');
           }
 
-
-          for (var i = node.bi; i <= parent.si; i++) {
+          for (var i = node.bi; i <= node.parent.si; i++) {
             collect(that.points[i], 'TODO');
           }
 
@@ -738,6 +755,14 @@ Polygon.prototype = {
 
       var polygon = new Polygon(poly);
       if ((!polygon.winding() || !node.contains)) {
+
+        if (!node.contains) {
+          polygon.points = polygon.points.filter(validFn);
+          if (points.length < 3) {
+            return;
+          }
+        }
+
         polygons.push(polygon);
         return true;
       } else {
