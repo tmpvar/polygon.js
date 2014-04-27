@@ -211,6 +211,10 @@
       return p;
     };
 
+    tests.jsjMirroredX = function() {
+      return tests.jsj().scale(Vec2(-1, 1), Vec2(0, 0), true);
+    };
+
     var currentTest = window.localStorage.getItem('currentTest') || 0;
 
     var testKeys = Object.keys(tests);
