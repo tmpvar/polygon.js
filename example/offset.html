@@ -359,7 +359,7 @@ return true;
             selfi.forEach(function(s, j) {
               // renderPolyPoints(s, 'green', 2);
               // TODO: without this simplify, some polygons have hairs
-              renderPoly(s.simplify(), i/(config.outer - config.inner) - j/selfi.length, false);
+              renderPoly(s.simplify(), i/(config.outer - config.inner), false);
             });
           }
         }
