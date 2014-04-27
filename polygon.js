@@ -425,22 +425,22 @@ Polygon.prototype = {
     var l = this.points.length+1;
     // TODO: use a faster algorithm. Bentley–Ottmann is a good first choice
     for (var i = 0; i<l; i++) {
-      var s = this.point(i-1);
-      var e = this.point(i);
+      var s = this.point(i);
+      var e = this.point(i+1);
 
-      for (var i2 = i+1; i2<l; i2++) {
+      for (var i2 = i+2; i2<l; i2++) {
         var s2 = this.point(i2);
         var e2 = this.point(i2+1);
-        if (e2 === e || s === s2 || e === s2 || s === e2) {
+        if (e2.equal(e) || s.equal(s2) || e.equal(s2) || s.equal(e2)) {
           continue;
         }
 
         var isect = segseg(s, e, s2, e2);
 
-
         // self-intersection
         if (isect && isect !== true) {
           var vec = Vec2.fromArray(isect);
+          vec.point = s;
           // TODO: wow, this is inneficient but is crucial for creating the
           //       tree later on.
           vec.s = i + (s.subtract(vec, true).length() / s.subtract(e, true).length())
