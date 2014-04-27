@@ -21,41 +21,208 @@
       return new one.color.HSL(h, s, l).hex();
     };
 
-    var p = new Polygon([
+    var config = {
+      inner: -200,
+      outer: -50,
+      step: 10,
+      renderPoly: false,
+      renderPoints: false,
+      renderPointAssociations : false,
+      simplify: false,
+      renderSelfIntersections: true,
+      pruneSelfIntersections: false
+
+    };
+    try {
+      obj = JSON.parse(window.localStorage.getItem('offset-data') || '{}') || {};
+      Object.keys(obj).forEach(function(k) {
+        config[k] = obj[k];
+      });
+    } catch (e) {
+      throw e;
+    }
+
+    var tests = {};
+
+    tests.square = function() {
+      return new Polygon([
+        Vec2(-100, -100),
+        Vec2(100, -100),
+        Vec2(100, 100),
+        Vec2(-100, 100),
+      ]);
+    };
+
+    tests.basicLocalInterference = function() {
+      return new Polygon([
+        Vec2(-100, -100),
+        Vec2(100, -100),
+        Vec2(200, -200),
+        Vec2(100, 0),
+        Vec2(100, 100),
+        Vec2(-100, 100),
+        Vec2(-100, 0)
+      ]);
+    };
+
+    tests.basicLocalInterferenceMirrorX = function() {
+      return this.basicLocalInterference().scale(Vec2(-1, 1), Vec2(0, 0), true);
+    };
+
+    tests.basicLocalInterferenceMirrorXY = function() {
+      return this.basicLocalInterference().scale(Vec2(-1, -1), Vec2(0, 0), true);
+    };
+
+    tests.basicLocalInterferenceMirrorY = function() {
+      return this.basicLocalInterference().scale(Vec2(1, -1), Vec2(0, 0), true);
+    };
+
+    tests.basicLocalInterferencex4 = function() {
+      return new Polygon([
+        Vec2(200, -200),
+        Vec2(100, 0),
+
+        Vec2(200, 200),
+        Vec2(0, 100),
+
+        Vec2(-200, 200),
+        Vec2(-100, 0),
+
+        Vec2(-200, -200),
+        Vec2(0, -100)
+      ]);
+    };
+
+    tests.spikeyCube = function() {
+      return new Polygon([
+        Vec2(-100, -25),
+        Vec2(-200, -200),
+        Vec2(-25, -100),
+
+        Vec2(25, -100),
+        Vec2(200, -200),
+        Vec2(100, -25),
+
+        Vec2(100, 25),
+        Vec2(200, 200),
+        Vec2(25, 100),
 
 
-      Vec2(-100, -100),
-      Vec2(100, -100),
-      Vec2(200, -200),
-      Vec2(100, 0),
+        Vec2(-25, 100),
+        Vec2(-200, 200),
+        Vec2(-100, 25),
+      ]);
+    };
 
+    tests.fetalchicken = function() {
+      var p = new Polygon([
+        Vec2(-100, -100),
+        Vec2(100, -100),
+        Vec2(200, -200),
+        Vec2(100, 0),
 
-      Vec2(300, 0),
-      Vec2(350, -100),
-      Vec2(350, -200),
-      Vec2(275, -300),
-      Vec2(600, -300),
+        Vec2(300, 0),
+        Vec2(350, -100),
+        Vec2(350, -200),
+        Vec2(275, -300),
+        Vec2(600, -300),
 
-      Vec2(400, -200),
-      Vec2(400, -150),
+        Vec2(400, -200),
+        Vec2(400, -150),
 
+        Vec2(600, -100),
+        Vec2(500, 200),
+        Vec2(300, 100),
+        Vec2(100, 200),
+        Vec2(-100, 100),
+        Vec2(-100, 0)
+      ]);
+      return p;
+    };
 
-      Vec2(600, -100),
-      Vec2(500, 200),
-      Vec2(300, 100),
+    tests.jsj = function() {
+      var p = new Polygon([
+        Vec2(49.695,157.942125),
+        Vec2(64.15875,149.188875),
+        Vec2(64.15875,149.188875),
+        Vec2(65.20075415039062,151.00175170898436),
+        Vec2(66.81693008422852,153.499410736084),
+        Vec2(67.99480490112305,154.95822830200194),
+        Vec2(69.3050012512207,156.20520089721683),
+        Vec2(70.79207528686523,157.2002020568848),
+        Vec2(72.50058316040038,157.9031053161621),
+        Vec2(74.47508102416991,158.2737842102051),
+        Vec2(75.576,158.322),
+        Vec2(75.576,158.322),
+        Vec2(76.64462869262694,158.29419369506834),
+        Vec2(78.62132528686523,158.0527842590332),
+        Vec2(80.36906900024412,157.52151461791993),
+        Vec2(81.87001364135742,156.64982744750978),
+        Vec2(83.10631301879882,155.38716542358395),
+        Vec2(84.0601209411621,153.68297122192385),
+        Vec2(84.71359121704103,151.48668751831056),
+        Vec2(85.0488776550293,148.7477569885254),
+        Vec2(85.09162499999998,147.159),
+        Vec2(85.09162499999998,86.769),
+        Vec2(102.85274999999999,86.769),
+        Vec2(102.85274999999999,147.41025),
+        Vec2(102.85274999999999,147.41025),
+        Vec2(102.82133684921263,149.10556217193604),
+        Vec2(102.57323628616334,152.3212155075073),
+        Vec2(102.08522480392455,155.30558740997313),
+        Vec2(101.36584811782836,158.06109377288817),
+        Vec2(100.42365194320678,160.59015048980717),
+        Vec2(99.26718199539182,162.8951734542847),
+        Vec2(97.90498398971557,164.97857855987547),
+        Vec2(96.34560364150998,166.8427817001343),
+        Vec2(94.59758666610718,168.49019876861576),
+        Vec2(92.66947877883909,169.92324565887455),
+        Vec2(90.56982569503784,171.14433826446538),
+        Vec2(88.3071731300354,172.1558924789429),
+        Vec2(85.8900667991638,172.96032419586183),
+        Vec2(83.3270524177551,173.56004930877683),
+        Vec2(80.62667570114135,173.9574837112427),
+        Vec2(77.79748236465453,174.15504329681397),
+        Vec2(76.33725,174.179625),
+        Vec2(76.33725,174.179625),
+        Vec2(75.02262072372436,174.1582446556091),
+        Vec2(72.49675368118285,173.99040819168087),
+        Vec2(70.10642249679564,173.6629291191101),
+        Vec2(67.84884378433226,173.18435754776002),
+        Vec2(64.70529794311523,172.2019051208496),
+        Vec2(60.95255886840819,170.4429458312988),
+        Vec2(57.68072872924804,168.23351852416994),
+        Vec2(54.86754043579101,165.64202407836913),
+        Vec2(52.49072689819336,162.73686337280276),
+        Vec2(50.52802102661132,159.58643728637693),
+        Vec2(49.69499999999999,157.94062499999998)
+      ]).rewind(false).clean().simplify();
 
+      var bounds = p.aabb();
+      var move = Vec2(-bounds.x - bounds.w/2, -bounds.y - bounds.h/2);
+      p.each(function(p, v) {
+        v.add(move);
+        v.set(v.x, -v.y);
+        v.multiply(5);
+      });
 
-      Vec2(100, 200),
-      Vec2(-100, 100),
-      Vec2(-100, 0)
-    ]);
+      var bounds = p.aabb();
+      p.points.shift();
+      return p;
+    };
 
+    var currentTest = window.localStorage.getItem('currentTest') || 0;
+
+    var testKeys = Object.keys(tests);
+    var testsLength = testKeys.length;
+    var p = tests[testKeys[currentTest]]();
 
     var renderPoly = function(polygons, angle, dashed, width) {
 
       var a = Array.isArray(polygons) ? polygons : [polygons];
 
       a.forEach(function(poly) {
+
         if (!poly.points.length || !poly.point(0)) {
           return;
         }
@@ -68,7 +235,8 @@
         var origWidth = ctx.lineWidth;
         ctx.closePath();
         ctx.lineWidth = width || 1;
-
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
         ctx.strokeStyle = hsl(angle, .75, .65);
         ctx.stroke();
         ctx.lineWidth = origWidth;
@@ -76,16 +244,15 @@
         ctx.strokeStyle =  hsl(angle, 1, .65);
         poly.points.forEach(function(c) {
           ctx.beginPath();
-            ctx.arc(c.x, c.y, (c.radius || .5), Math.PI*2, false);
             var orig = ctx.strokeStyle;
 
             if (c.color) {
+              config.renderPoints && ctx.arc(c.x, c.y, (c.radius || .5), Math.PI*2, false);
               ctx.strokeStyle = c.color;
+              ctx.stroke();
             }
 
-            ctx.stroke();
-
-          if (c.point && dashed !== false) {
+          if (c.point && config.renderPointAssociations && dashed !== false) {
             dashedLine(ctx, c, c.point, 4);
             ctx.stroke();
           }
@@ -126,37 +293,18 @@
       ctx[q % 2 == 0 ? 'moveTo' : 'lineTo'](sx, sy);
     };
 
-
-
-    var config = {
-      inner: -40,
-      outer: -50,
-      step: 10,
-      renderPoly: false,
-      simplify: false,
-      renderSelfIntersections: true,
-      pruneSelfIntersections: false
-    };
-    try {
-      obj = JSON.parse(window.localStorage.getItem('offset-data'));
-      Object.keys(obj).forEach(function(k) {
-        config[k] = obj[k];
-      });
-    } catch (e) {
-      throw e;
-    }
-
-
     var ctx = fc(function() {
+
       var w = ctx.canvas.width;
       var h = ctx.canvas.height;
-
+      ctx.strokeStyle = "red";
       ctx.fillStyle = '#111115';
       ctx.fillRect(0, 0, w, h);
 
       ctx.save();
-        ctx.translate(w/2 - 200, h/2 - 200);
-        ctx.scale(1, -1);
+        ctx.translate(w/2, h/2);
+        ctx.scale(scale, -scale);
+        ctx.translate(-translate.x, translate.y);
 
         ctx.beginPath()
         ctx.moveTo(-5, -5);
@@ -172,72 +320,48 @@
         ctx.strokeStyle = "blue"
         ctx.stroke();
 
-        if (0) {
-          // TODO: when you bump this up past 200 we start seeing issues
-          //       I think we need to cap the ends of really long lines
-          //       and completely implement pruneSelfIntersections
+        for (var i = config.inner; i<config.outer; i += config.step || 10) {
+          if (i === 0) { continue; }
+          var o = p.offset(i, true);
 
-          // for (var i=10; i<100; i+=1) {
-          //   renderPoly(p.offset(i).simplify().pruneSelfIntersections(), i*.002, false);
-          // }
+          config.simplify && o.simplify();
+          config.renderPoints && renderPolyPoints(o, 'yellow', 1);
+          config.renderPoly && renderPoly(o, .3);
+          config.renderSelfIntersections && renderPolyPoints(o.selfIntersections());
 
-          renderPoly(p.offset(10), .5);
-          renderPoly(p.offset(5), .5);
-          renderPoly(p.offset(20), .7);
+          if (config.pruneSelfIntersections) {
 
-          for (var i = -10; i>-100; i -= 10) {
-            var offset = p.offset(i, true);
-            var pruned = offset.clone().simplify().pruneSelfIntersections();
-            if (pruned.length) {
-              pruned.forEach(function(poly, j) {
-                renderPoly(poly, i*.001 + j * .0001, false)
-              });
-            } else {
-              renderPoly(offset, i*.001 , false);
-            }
-          }
-        } else {
-          // TODO: this breaks at -110 because the first point is invalid
-          // TODO: this breaks at 30 because of invalid 'interferes' handling
+            var selfi = o.pruneSelfIntersections(function(point) {
+return true;
+              // TODO: not properly handling global interference when
+              //       delta is positive - or this implementation is busted.
 
-          for (var i = config.inner; i<config.outer; i += config.step || 10) {
-            if (i === 0) { continue; }
-            var o = p.offset(i, true);
 
-            config.simplify && o.simplify();
-            renderPolyPoints(o, 'blue', 3);
-            config.renderPoly && renderPoly(o, .3);
-            config.renderSelfIntersections && renderPolyPoints(o.selfIntersections());
+              var dtoclosest = p.closestPointTo(point).subtract(point, true).length();
+              var d = dtoclosest - Math.abs(i);
+              var valid = Math.round(d*1000)/1000 === 0;
 
-            if (config.pruneSelfIntersections) {
+              if (i > 0 && d >= 0) {
+                valid = true;
+              }
 
-              var selfi = o.pruneSelfIntersections(function(point) {
+              if (valid) {
+                return (i > 0 && !p.containsPoint(point)) || (i<0 && p.containsPoint(point));
+              } else {
+                console.error('NOT VALID', i, dtoclosest, d);
+              }
+            });
 
-                // TODO: not properly handling global interference when
-                //       delta is positive - or this implementation is busted.
-                // if (i > 0) {
-                //   return true;
-                // }
-
-                var dtoclosest = p.closestPointTo(point).subtract(point, true).length();
-                var d = dtoclosest - Math.abs(i);
-                var valid = Math.round(d*1000)/1000 === 0;
-
-                if ((i > 0 && !p.containsPoint(point)) || (i<0 && p.containsPoint(point))) {
-                  return valid;
-                } else {
-                  console.error('NOT VALID', i, dtoclosest, d);
-                }
-              });
-
-              selfi.forEach(function(s, j) {
-
-                // renderPolyPoints(s, 'green', 2);
-                renderPoly(s.simplify(), i/100 - j/selfi.length, false);
-              });
-            }
+            selfi.forEach(function(s, j) {
+              // renderPolyPoints(s, 'green', 2);
+              // TODO: without this simplify, some polygons have hairs
+              renderPoly(s.simplify(), i/(config.outer - config.inner) - j/selfi.length, false);
+            });
           }
         }
+
+        p.points[0].color = "#f0f";
+        p.points[1].color = "#f00";
 
         renderPoly(p, 0, false, 3);
 
@@ -252,19 +376,73 @@
       ctx.dirty();
     };
 
-    gui.add(config, 'inner', -200, 200).onChange(updateValues);
-    gui.add(config, 'outer', -200, 200).onChange(updateValues);
+    gui.add(config, 'inner', -200, 500).onChange(updateValues);
+    gui.add(config, 'outer', -200, 500).onChange(updateValues);
     gui.add(config, 'step', 1, 200).onChange(updateValues);
     gui.add(config, 'renderSelfIntersections', false).onChange(updateValues);
     gui.add(config, 'renderPoly', false).onChange(updateValues);
+    gui.add(config, 'renderPoints', false).onChange(updateValues);
+    gui.add(config, 'renderPointAssociations', false).onChange(updateValues);
     gui.add(config, 'simplify', false).onChange(updateValues);
     gui.add(config, 'pruneSelfIntersections', false).onChange(updateValues);
 
+    window.addEventListener('keydown', function(ev) {
+      switch (ev.keyCode) {
+        case 39:
+          currentTest = (currentTest + 1) % testsLength;
+          p = tests[testKeys[currentTest]]();
+          ctx.dirty();
+        break;
+        case 37:
+          currentTest = currentTest - 1;
+          if (currentTest < 0) {
+            currentTest = testsLength-1;
+          }
+          p = tests[testKeys[currentTest]]();
+          ctx.dirty();
+        break;
+      }
+      window.localStorage.setItem('currentTest', currentTest);
+    });
 
+    var scale = parseFloat(window.localStorage.getItem('scale')) || 1;
+    var translate = Vec2.fromArray(
+      (window.localStorage.getItem('translate') || '').split(',').map(function(i) {
+        var val = parseFloat(i.trim());
+        return !isNaN(val) ? val : 0;
+      })
+    );
 
+    ctx.canvas.addEventListener('mousewheel', function(ev) {
+      scale += ev.wheelDelta * .001 * scale;
+      if (scale < 0) {
+        scale = 0.1;
+      }
+      window.localStorage.setItem('scale', scale);
+
+      ctx.dirty();
+      ev.preventDefault();
+    });
+
+    var down = 0;
+
+    var mouse = Vec2(0, 0);
+    ctx.canvas.addEventListener('mousedown', function(e) { down = Vec2(e.clientX, e.clientY); });
+    ctx.canvas.addEventListener('mouseup', function() { down = false; });
+    ctx.canvas.addEventListener('mousemove', function(e) {
+      mouse.set(e.clientX, e.clientY)
+      if (down) {
+        var newDown = Vec2(e.clientX, e.clientY);
+        var d = newDown.subtract(down, true);
+        translate.subtract(d.divide(scale));
+
+        window.localStorage.setItem('translate', translate.toArray().join(','));
+
+        down = newDown;
+        ctx.dirty();
+      }
+    });
 
   </script>
-
-
 </body>
 </html>
