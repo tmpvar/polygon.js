@@ -380,72 +380,38 @@ Polygon.prototype = {
       var r = delta / Math.sin(Math.acos(e1.dot(e2))/2);
       var d = e1.add(e2, true).normalize().multiply(r, true);
 
-      var angle = toTAU(e1.angleTo(e2));
       var o = e1.perpDot(e2) < 0 ? c.add(d, true) : c.subtract(d, true);
 
-      var bc = bisect(c, n);
-      var nc = bisect(n, this.point(i+2));
+      if (e1.angleTo(e2) <= -Math.PI * .75) {
+        collect(o, c, 'angle');
+      } else {
 
-      var start = c.subtract(bc, true);
-      var end = n.subtract(bc, true);
+        var pc = bisect(p, c);
+        var bc = bisect(c, n);
+        var nc = bisect(n, nn);
 
-      if (delta > 0) {
-        angle = TAU-angle;
-      }
+        var prevprev = p.subtract(pc, true);
+        var prev = c.subtract(pc, true);
+        var start = c.subtract(bc, true);
+        var end = n.subtract(bc, true);
 
-      if (delta < 0) {
-        if (angle <= TAU * .85 && angle >= TAU * .15) {
-          collect(o, c, 'angle');
+        var isect = segseg(prevprev, prev, start, end);
+        if (isect) {
+
+          // TODO: this has no effect.
+          if (ret[ret.length-1] && ret[ret.length-1].point === c) {
+            console.log('here', ret[ret.length-2].type);
+            ret.pop();
+          }
+          collect(Vec2.fromArray(isect), c, 'isect');
+
+        } else {
+          collect(start, c, 'edge'); // edge offset
         }
-        collect(start, c); // edge offset
-        collect(end, n); // edge offset
 
-      } else  {
-        if (angle <= TAU/4) {
-          collect(o, c, 'angle');
-        }
-        collect(start, c); // edge offset
-        collect(end, n); // edge offset
+        collect(end, n, 'edge'); // edge offset
       }
     });
-
-    var poly = Polygon(ret).simplify();
-    var l = poly.points.length;
-
-
-    // TODO: optimize by only attempting isect when
-    //       on an edge offset
-    ret = [];
-    for (var i=0; i<l; i++) {
-      var pp = poly.point(i-2);
-      var p = poly.point(i-1);
-      var c = poly.point(i);
-      var n = poly.point(i+1);
-      var nn = poly.point(i+2);
-      var nnn = poly.point(i+3);
-
-      var ppnn = segseg(pp, p, n, nn);
-      var ppnnn = segseg(pp, p, nnn, nn);
-      var pcnn = segseg(p, c, n, nn);
-      var ppcn = segseg(p, pp, n, c);
-
-      if (ppnnn) {
-        i+=2;
-        collect(Vec2.fromArray(ppnnn))
-        continue;
-      } else if (ppnn) {
-        i+=1;
-        collect(Vec2.fromArray(ppnn));
-        continue;
-      } else if (pcnn) {
-        i+=1;
-        collect(Vec2.fromArray(pcnn))
-
-        continue;
-      }
-
-      collect(c);
-    }
 
     return Polygon(ret).simplify();
   },
