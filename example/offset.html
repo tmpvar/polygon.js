@@ -335,26 +335,7 @@
 
           if (config.pruneSelfIntersections) {
 
-            var selfi = o.pruneSelfIntersections(function(point) {
-return true;
-              // TODO: not properly handling global interference when
-              //       delta is positive - or this implementation is busted.
-
-
-              var dtoclosest = p.closestPointTo(point).subtract(point, true).length();
-              var d = dtoclosest - Math.abs(i);
-              var valid = Math.round(d*1000)/1000 === 0;
-
-              if (i > 0 && d >= 0) {
-                valid = true;
-              }
-
-              if (valid) {
-                return (i > 0 && !p.containsPoint(point)) || (i<0 && p.containsPoint(point));
-              } else {
-                console.error('NOT VALID', i, dtoclosest, d);
-              }
-            });
+            var selfi = o.pruneSelfIntersections();
 
             selfi.forEach(function(s, j) {
               // renderPolyPoints(s, 'green', 2);
