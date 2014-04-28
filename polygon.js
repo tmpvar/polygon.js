@@ -431,7 +431,7 @@ Polygon.prototype = {
       for (var i2 = i+2; i2<l; i2++) {
         var s2 = this.point(i2);
         var e2 = this.point(i2+1);
-        if (e2.equal(e) || s.equal(s2) || e.equal(s2) || s.equal(e2)) {
+        if (e2 === e || s === s2 || e === s2 || s === e2) {
           continue;
         }
 
