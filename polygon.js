@@ -334,32 +334,24 @@ Polygon.prototype = {
       return bisector;
     };
 
-    var parline = function(a, b) {
-      var normal = a.subtract(b, true);
-
-      var angle = Vec2(1, 0).angleTo(normal);
-      var bisector = Vec2(delta, 0).rotate(angle + Math.PI/2);
-
-      bisector.add(b);
-
-      var cperp = bisector.add(normal, true);
-
-      var l = new Line2(bisector.x, bisector.y, cperp.x, cperp.y);
-      var n = a.add(normal, true);
-      var l2 = new Line2(a.x, a.y, n.x, n.y);
-      return l;
-    }
-
     var ret = [];
     var collect = function(a, point, type) {
       if (a) {
+        a.type = a.type || type || 'edge';
         ret.push(a);
         if (point) {
           a.point = point;
         }
-        a.type = type || 'edge';
+
+        if (a.type === 'edge') {
+          a.color = "red";
+        } else if (a.type === 'angle') {
+          a.color = "yellow";
+        } else if (a.type) {
+          a.color = "pink";
+        }
       }
-    }
+    };
 
     var lines = [];
     this.rewind(false).simplify().each(function(p, c, n, i) {
@@ -372,29 +364,24 @@ Polygon.prototype = {
 
       var o = e1.perpDot(e2) < 0 ? c.add(d, true) : c.subtract(d, true);
 
+      var pc = bisect(p, c);
+      var bc = bisect(c, n);
+      var nc = bisect(n, this.point(i+2));
+
+      var prevprev = p.subtract(pc, true);
+      var prev = c.subtract(pc, true);
+      var start = c.subtract(bc, true);
+      var end = n.subtract(bc, true);
+
       if (e1.angleTo(e2) <= -Math.PI * .75) {
         collect(o, c, 'angle');
+        collect(end, n, 'edge');
       } else {
 
-        var pc = bisect(p, c);
-        var bc = bisect(c, n);
-        var nc = bisect(n, nn);
-
-        var prevprev = p.subtract(pc, true);
-        var prev = c.subtract(pc, true);
-        var start = c.subtract(bc, true);
-        var end = n.subtract(bc, true);
-
         var isect = segseg(prevprev, prev, start, end);
+
         if (isect) {
-
-          // TODO: this has no effect.
-          if (ret[ret.length-1] && ret[ret.length-1].point === c) {
-            console.log('here', ret[ret.length-2].type);
-            ret.pop();
-          }
           collect(Vec2.fromArray(isect), c, 'isect');
-
         } else {
           collect(start, c, 'edge'); // edge offset
         }
@@ -452,8 +439,8 @@ Polygon.prototype = {
         }
       }
     }
-    var poly = Polygon(ret).clean();
-    return poly;
+
+    return Polygon(ret).dedupe();
   },
 
   pruneSelfIntersections : function(validFn) {
