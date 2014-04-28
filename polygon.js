@@ -436,13 +436,451 @@ Polygon.prototype = {
     return Polygon(points);
   },
 
-  pruneSelfIntersections : function(validFn) {
+
+  splitSelfIntersections : function() {
+    var selfIntersections = this.selfIntersections();
+
+    if (!selfIntersections.points.length) {
+      return [this];
+    }
+
+    var contain = function(parent, child) {
+      return parent.s < child.s && parent.b > child.b;
+    }
+
+    var interfere = function(s1, b1, s2, b2) {
+      return (s1 < s2 && s2 < b1 && b2 > b1) || (s2 < b1 && b1 < b2 && s1 < s2);
+    }
+
+    // Setup the root to be the first point in this polygon
+    var root = this.points[0];
+    root.s = 0;
+    root.si = 0;
+    root.depth = 0;
+    root.bi = (this.points.length-1);
+    root.b = root.bi + 0.99;
+
+    var node_reparent = function(node, parent) {
+
+      if (node === parent) {
+        return;
+      }
+
+      if (node.parent) {
+        node.parent.contains = node.parent.contains.filter(function(n) {
+          return n !== node;
+        });
+      }
+
+      if (!parent.contains) {
+        parent.contains = [];
+      }
+
+      var oldParent = node.parent || null;
+      if (oldParent === root) {
+        root = node;
+        node.parent = null;
+      } else {
+        node.parent = parent;
+      }
+
+      parent.contains.push(node);
+      return oldParent;
+    };
+
+    var current = root;
+
+    selfIntersections.points.sort(function(a, b) {
+      return a.s < b.s ? -1 : 1;
+    });
+
+
+    for (var i=0; i<selfIntersections.length; i++) {
+      current = root;
+
+      var node = selfIntersections.points[i];
+      if (contain(current, node)) {
+        if (current.contains) {
+          var interferes = false;
+          for (var j = 0; j<current.contains.length; j++) {
+            var cc = current.contains[j];
+
+            // cc is contained by node
+            if (contain(cc, node)) {
+              current = current.contains[j];
+              j = 0;
+
+              if (!current.contains) {
+                break;
+              }
+
+            // cc belongs to node
+            } else if (contain(node, cc)) {
+              node = current;
+              current = cc;
+              break;
+            } else if (interfere(cc.s, cc.b, node.s, node.b)) {
+              console.warn('INTERFERES');
+              interferes = true;
+            }
+          }
+        }
+
+        node_reparent(node, current);
+      } else {
+        node_reparent(current, node);
+      }
+    }
+
+    var ret = [];
+    var poly = [];
+    var referencePolygon = [];
+
+    var collect = function(v) {
+      // skip adjacent duplicates
+      if (poly.length && poly[poly.length-1].equal(v)) {
+        return;
+      }
+
+      poly.push(v);
+
+      if (v.point) {
+        referencePolygon.push(v.point);
+      }
+    };
+
+    selfIntersections.points.unshift(root);
+
+    while (selfIntersections.length) {
+      var item = selfIntersections.points.shift();
+      collect(item);
+
+      if (item.contains) {
+
+        for (var k2 = item.si+1; k2<=item.contains[0].si; k2++) {
+         collect(this.point(k2));
+        }
+
+        for (var l=0; l<item.contains.length; l++) {
+          var contained = item.contains[l];
+          collect(contained);
+
+          var start = contained.bi;
+          var end = item.contains[l+1] ? item.contains[l+1].si+1 : item.bi;
+
+          for (var m = start; m<end; m++) {
+            collect(this.point(m));
+          }
+        }
+
+        collect(this.point(item.bi));
+      } else {
+        for (var n = item.si+1; n<=item.bi; n++) {
+          collect(this.point(n));
+        }
+      }
+
+      var collectedPoly = Polygon(poly).simplify();
+      if (collectedPoly.length > 2) {
+        collectedPoly.referencePolygon = Polygon(referencePolygon)
+
+        if (collectedPoly.referencePolygon.winding() === collectedPoly.winding()) {
+          ret.push(collectedPoly);
+        }
+      }
+      poly = [];
+      ref = [];
+    }
+
+    console.log('done', ret);
+
+    return ret;
+  },
+
+  pruneSelfIntersections2 : function(validFn) {
+    var selfIntersections = this.selfIntersections();
+
+    if (!selfIntersections.points.length) {
+      return [this];
+    }
+
+    var belongTo = function(s1, b1, s2, b2) {
+      return s1 > s2 && b1 < b2
+    }
+
+    var contain = function(s1, b1, s2, b2) {
+      return s1 < s2 && b1 > b2;
+    }
+
+    var interfere = function(s1, b1, s2, b2) {
+      return (s1 < s2 && s2 < b1 && b2 > b1) || (s2 < b1 && b1 < b2 && s1 < s2);
+    }
+
+    var node_set_array = function(node, key, value) {
+      if (!node[key]) {
+        node[key] = [value];
+      } else {
+        node[key].push(value);
+      }
+    }
+
+    var compare = function(a, b) {
+      if (belongTo(a.s, a.b, b.s, b.b)) {
+        return 'belongs';
+      } else if (contain(a.s, a.b, b.s, b.b)) {
+        return 'contains';
+      } else if (interfere(a.s, a.b, b.s, b.b)) {
+        return 'interferes'
+      } else {
+        return null;
+      }
+    }
+
+    var node_associate = function(node, child) {
+      if (!node) {
+        return true;
+      }
+
+      var relationship = compare(node, child);
+      if (relationship) {
+
+        if (relationship === 'contains') {
+          child.parent = node;
+          node_set_array(node, relationship, child);
+          return true;
+        }
+
+        if (relationship === 'interferes') {
+
+          // TODO: there are other cases
+          //       consider keeping track of all the interference
+          if (node.contains && node.contains.length) {
+            console.log('REPARENTING', node.contains[0], child);
+
+            node_reparent(node.contains[0], child);
+            node_reparent(child, node);
+            // node.contains.forEach(function(contained) {
+            //   node_reparent(contained, child)
+            // });
+            // node_reparent(child, node);
+            console.log(compare(child, node));
+            return true;
+            node_set_array(node.contains[0], 'contains', child);
+            return true;
+          }
+        }
+      }
+    }
+
+    var node_reparent = function(node, parent) {
+      if (node.parent) {
+        node.parent.contains = node.parent.contains.filter(function(n) {
+          return n !== node;
+        });
+      }
+
+      if (!parent.contains) {
+        parent.contains = [];
+      }
+
+      if (!node.contains) {
+        node.contains = [];
+      }
+
+      var oldParent = node.parent || null;
+      node.parent = parent;
+      parent.contains.push(node);
+      return oldParent;
+    };
+
+    // TODO: ensure the root node is valid
+    var root = this.point(0);
+
+    var points = selfIntersections.points.concat();
+
+    var startCompareAt = 0;
+
+    if (validFn && !validFn(root)) {
+      var index = points.length-1;
+      root = points[index];
+      while (!validFn(root) && index--) {
+        root = points[index];
+      }
+
+      // no valid start points found, bail out
+      if (index == -1) {
+        return [];
+      }
+
+      points = points.slice(index-1);
+
+    } else {
+      root.s = 0;
+      root.si = 0;
+      root.bi = (this.points.length-1); + 0.99;
+      root.b = root.bi + 0.99;
+
+      points.unshift(root);
+    }
+
+    points.sort(function(a, b) {
+      return a.s < b.s ? -1 : 1;
+    });
+
+    for (var i=1; i<points.length; i++) {
+      if (!node_associate(points[i-1], points[i])) {
+        var parent = points[i-1].parent;
+
+        while (parent) {
+          if (node_associate(parent, points[i])) {
+            console.log('missed, but found')
+            break;
+          }
+          parent = parent.parent;
+        }
+      };
+    }
+
+    var polygons = [];
+    var that = this;
+
+    var plan = function(a, b) {
+      console.warn('collection plan %s -> %s', a, b);
+    }
+
+    var walk = function(node) {
+      var poly = [];
+      var collect = function(n, id) {
+        if (n) {
+          //console.log('collected', id || n.id, n.toString(), 'line: ' + (new Error()).stack.split('\n')[2].split('js:').pop().split(':').shift());
+          poly.push(n);
+        }
+      };
+
+      var contains = node.contains || [];
+
+      if (contains.length) {
+        var i, j;
+
+        // If there's a parent we're not going to collect completely around
+        // to this node.  So add it now.
+        node.parent && collect(node, 'collect node if it has a parent');
+        plan(node.si, contains[0].si);
+
+        for (i = node.si; i<=contains[0].si; i++) {
+          collect(that.points[i], 'up to next: ' + i);
+        }
+
+        if (node.si !== 0 && !node.parent) {
+          poly.pop();
+          collect(node, 'first collection is not root');
+        }
+
+        for (j = 0; j<contains.length; j++) {
+          // TODO: need to i<=contains[i] for the right
+          //       but it breaks other stuff
+          var startPoint = contains[j].bi+1;
+          var endPoint = j<contains.length-1 ? contains[j+1].si : node.bi;
+
+          collect(contains[j], 'root node collect ' + contains[j].si);
+
+          plan(startPoint, endPoint);
+          for (i = startPoint; i<=endPoint; i++) {
+            collect(that.points[i], 'contains[' + j + '] ' + i);
+          }
+          startPoint = contains[j].si
+        }
+
+      } else {
+
+        // the last self intersection was on the current segment
+        if (node.parent && node.parent.bi - node.bi <= 1 && node.parent.si - node.si <= 1) {
+
+          for (var i = node.parent.bi-1; i <= node.si; i++) {
+            collect(that.points[i], 'TODO');
+          }
+
+          collect(node);
+
+          // Adding overhead, but ensuring proper offsetting
+          // this fixes a case where the polygon has an ear
+          // that actually protrudes into the offset area.
+          var nodeStart = node.si;
+          if (validFn && !validFn(that.points[i])) {
+            nodeStart++;
+          }
+
+          for (var i = nodeStart; i<=node.bi; i++) {
+            collect(that.points[i], 'TODO');
+          }
+
+          for (var i = node.bi; i <= node.parent.si; i++) {
+            collect(that.points[i], 'TODO');
+          }
+
+        } else {
+
+          for (var i = node.si; i<=node.bi; i++) {
+            collect(that.points[i], 'TODO');
+          }
+
+          collect(node);
+        }
+      }
+
+      var polygon = new Polygon(poly);
+
+      // TODO: this test is defective.
+      //
+      //       A: filter invalid points - this resolves
+      //          the issue to some extent, but causes
+      //          other issues (i.e. jumping across the boundaries)
+      //
+      //       B: don't rely on polygon winding, and instead
+      //          find a way to reliably determine if the polygon is an ear
+      //
+      //       C: track the winding of the parent feature. If the resulting poly
+      //          does not match it's winding then it's invalid.
+
+      var mapping = polygon.points.map(function(p) {
+        if (p.point) {
+          return p.point;
+        }
+      }).filter(Boolean);
+
+      var sourceWinding = Polygon(mapping).winding();
+      if (sourceWinding === polygon.winding() && polygon.length > 2) {
+        polygon.points[0].radius = 10
+        polygons.push(polygon);
+        return true;
+      } else {
+        return false
+      }
+    };
+
+    // TODO: this is decent, but it needs to be a breadth
+    //       first search in order to be robust.
+    //
+    //       Why? well, any node on the tree can have multiple
+    //       children which means the polygon spans multiple
+    //       self-intersections.  This implementation does not
+    //       handle this.
+    for (var i=0; i<points.length; i+=2) {
+      if (!walk(points[i])) {
+        i--;
+      }
+    }
+    console.log(polygons);
+    return polygons;
+  },
+
+  pruneSelfIntersections1 : function(validFn) {
     var selfIntersections = this.selfIntersections();
     if (!selfIntersections.points.length) {
       return [this];
     }
 
-console.log('self isects', selfIntersections.points.length, selfIntersections.dedupe().toString())
+    console.log('self isects', selfIntersections.points.length, selfIntersections.dedupe().toString())
     var belongTo = function(s1, b1, s2, b2) {
       return s1 > s2 && b1 < b2
     }
@@ -502,7 +940,7 @@ console.log('self isects', selfIntersections.points.length, selfIntersections.de
             // node.contains.forEach(function(contained) {
             //   node_reparent(contained, child)
             // });
-//            node_reparent(child, node);
+            // node_reparent(child, node);
             console.log(compare(child, node));
             return true;
             node_set_array(node.contains[0], 'contains', child);
@@ -595,7 +1033,7 @@ console.log('self isects', selfIntersections.points.length, selfIntersections.de
         }
 
         depth > 0 && collect(node, node.si + '->' + node.bi);
-console.log('contains.length', contains.length, contains.join(','), contains[0], node);
+        console.log('contains.length', contains.length, contains.join(','), contains[0], node);
         if (contains.length) {
           for (i=node.si; i<contains[0].si; i++) {
             collect(that.points[i], 'first-' + i);

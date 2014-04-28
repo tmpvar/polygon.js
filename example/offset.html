@@ -30,9 +30,10 @@
       renderPointAssociations : false,
       simplify: false,
       renderSelfIntersections: true,
-      pruneSelfIntersections: false
-
+      pruneSelfIntersections: false,
+      renderSplitSelfIntersections : false
     };
+
     try {
       obj = JSON.parse(window.localStorage.getItem('offset-data') || '{}') || {};
       Object.keys(obj).forEach(function(k) {
@@ -338,11 +339,17 @@
             var selfi = o.pruneSelfIntersections();
 
             selfi.forEach(function(s, j) {
-              // renderPolyPoints(s, 'green', 2);
-              // TODO: without this simplify, some polygons have hairs
-              renderPoly(s.simplify(), i/(config.outer - config.inner), false);
+              renderPoly(s, i/(config.outer - config.inner), false);
             });
           }
+
+          if (config.renderSplitSelfIntersections) {
+            var parts = o.splitSelfIntersections();
+            parts.forEach(function(s, j) {
+              renderPoly(s, i/(config.outer - config.inner) + j/parts.length, false);
+            });
+          }
+
         }
 
         p.points[0].color = "#f0f";
@@ -365,6 +372,7 @@
     gui.add(config, 'outer', -200, 500).onChange(updateValues);
     gui.add(config, 'step', 1, 200).onChange(updateValues);
     gui.add(config, 'renderSelfIntersections', false).onChange(updateValues);
+    gui.add(config, 'renderSplitSelfIntersections', false).onChange(updateValues);
     gui.add(config, 'renderPoly', false).onChange(updateValues);
     gui.add(config, 'renderPoints', false).onChange(updateValues);
     gui.add(config, 'renderPointAssociations', false).onChange(updateValues);
