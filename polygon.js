@@ -430,7 +430,24 @@ Polygon.prototype = {
   },
 
   selfIntersections : function() {
+<<<<<<< HEAD
     var points = [];
+=======
+    var ret = [];
+    var poly = this;
+    var l = this.points.length+1;
+    // TODO: use a faster algorithm. Bentley–Ottmann is a good first choice
+    for (var i = 0; i<l; i++) {
+      var s = this.point(i);
+      var e = this.point(i+1);
+
+      for (var i2 = i+2; i2<l; i2++) {
+        var s2 = this.point(i2);
+        var e2 = this.point(i2+1);
+        if (e2 === e || s === s2 || e === s2 || s === e2) {
+          continue;
+        }
+>>>>>>> fix: selfIntersections with same coord points
 
     selfIntersections(this.points, function(isect, i, s, e, i2, s2, e2, unique) {
       if (!unique) return;
