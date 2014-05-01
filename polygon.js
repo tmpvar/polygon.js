@@ -406,6 +406,28 @@ Polygon.prototype = {
     return this;
   },
 
+  doesIntersectPolygon : function(poly) {
+
+    var l = this.length;
+    var l2 = poly.length;
+    for (var i=0; i<l; i++) {
+      for (var j = 0; j<l2; j++) {
+        var isect = segseg(
+          this.point(i),
+          this.point(i+1),
+          poly.point(j),
+          poly.point(j+1)
+        );
+
+        if (isect) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  },
+
   selfIntersections : function() {
     var ret = [];
     var poly = this;
@@ -450,7 +472,7 @@ Polygon.prototype = {
   },
 
 
-  splitSelfIntersections : function() {
+  splitSelfIntersections : function(delta, originalPolygon) {
     var selfIntersections = this.selfIntersections();
 
     if (!selfIntersections.points.length) {

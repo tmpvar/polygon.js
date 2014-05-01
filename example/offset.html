@@ -344,7 +344,7 @@
           }
 
           if (config.renderSplitSelfIntersections) {
-            var parts = o.splitSelfIntersections();
+            var parts = o.splitSelfIntersections(i, p);
             parts.forEach(function(s, j) {
               renderPoly(s, i/(config.outer - config.inner) + j/parts.length, false);
             });
