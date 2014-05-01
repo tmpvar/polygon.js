@@ -586,8 +586,24 @@ Polygon.prototype = {
 
     selfIntersections.points.unshift(root);
 
+    var evenDepth = function(node) {
+      var i = 0;
+      node = node.parent;
+      while (node) {
+        node = node.parent;
+        i++;
+      }
+      return i%2 === 0;
+    }
+
+
     while (selfIntersections.length) {
       var item = selfIntersections.points.shift();
+
+      if (!evenDepth(item)) {
+        continue;
+      }
+
       collect(item);
 
       if (item.contains) {
