@@ -516,41 +516,18 @@ Polygon.prototype = {
       return a.s < b.s ? -1 : 1;
     });
 
+    selfIntersections.points.unshift(root);
 
-    for (var i=0; i<selfIntersections.length; i++) {
-      current = root;
-
-      var node = selfIntersections.points[i];
-      if (contain(current, node)) {
-        if (current.contains) {
-          var interferes = false;
-          for (var j = 0; j<current.contains.length; j++) {
-            var cc = current.contains[j];
-
-            // cc is contained by node
-            if (contain(cc, node)) {
-              current = current.contains[j];
-              j = 0;
-
-              if (!current.contains) {
-                break;
-              }
-
-            // cc belongs to node
-            } else if (contain(node, cc)) {
-              node = current;
-              current = cc;
-              break;
-            } else if (interfere(cc.s, cc.b, node.s, node.b)) {
-              console.warn('INTERFERES');
-              interferes = true;
-            }
-          }
+    for (var i=1; i<selfIntersections.length; i++) {
+      var current = selfIntersections.point(i);
+      for (var j=i; j>=0; j--) {
+        var compare = selfIntersections.point(j);
+        if (contain(compare, current)) {
+          node_reparent(current, compare);
+          break;
+        } else if (interfere(compare, current)) {
+          console.error('INTERFERE');
         }
-
-        node_reparent(node, current);
-      } else {
-        node_reparent(current, node);
       }
     }
 
@@ -571,9 +548,8 @@ Polygon.prototype = {
       }
     };
 
-    selfIntersections.points.unshift(root);
-
     var evenDepth = function(node) {
+      return true;
       var i = 0;
       node = node.parent;
       while (node) {
@@ -586,10 +562,6 @@ Polygon.prototype = {
 
     while (selfIntersections.length) {
       var item = selfIntersections.points.shift();
-
-      if (!evenDepth(item)) {
-        continue;
-      }
 
       collect(item);
 
@@ -622,7 +594,10 @@ Polygon.prototype = {
       if (collectedPoly.length > 2) {
         collectedPoly.referencePolygon = Polygon(referencePolygon)
 
-        if (collectedPoly.referencePolygon.winding() === collectedPoly.winding()) {
+        if (
+            collectedPoly.referencePolygon.winding() === collectedPoly.winding() &&
+            !collectedPoly.doesIntersectPolygon(originalPolygon)
+        ) {
           ret.push(collectedPoly);
         }
       }
