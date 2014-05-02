@@ -29,6 +29,10 @@ var defined = function(a) {
   return typeof a !== 'undefined';
 }
 
+var near = function(a, b) {
+  return Math.round((a-b)*10000)/10000 === 0;
+};
+
 
 function Polygon(points) {
   if (points instanceof Polygon) {
@@ -353,17 +357,24 @@ Polygon.prototype = {
           a.point = point;
         }
 
-        if (a.type === 'edge') {
-          a.color = "red";
-        } else if (a.type === 'angle') {
-          a.color = "yellow";
-        } else if (a.type) {
-          a.color = "pink";
+        if (!a.color) {
+          var map = {
+            edge : 'red',
+            angle: 'yellow',
+            isect: 'pink'
+          };
+
+          if (map[a.type]) {
+            a.color = map[a.type];
+          } else {
+            a.color = '#F0F';
+          }
         }
       }
     };
 
-    var lines = [];
+    var original = this;
+
     this.rewind(false).simplify().each(function(p, c, n, i) {
 
       var e1 = c.subtract(p, true).normalize();
@@ -385,7 +396,6 @@ Polygon.prototype = {
 
       if (e1.angleTo(e2) <= -Math.PI * .75) {
         collect(o, c, 'angle');
-        collect(end, n, 'edge');
       } else {
 
         var isect = segseg(prevprev, prev, start, end);
@@ -395,10 +405,58 @@ Polygon.prototype = {
         } else {
           collect(start, c, 'edge'); // edge offset
         }
-
-        collect(end, n, 'edge'); // edge offset
       }
+
+      collect(end, n, 'edge'); // edge offset
+
     });
+
+    // catch the cases where two adjacent bisectors intersect
+    var sentinel = 100;
+    var done = false;
+    while (sentinel-- && !done) {
+      done = true;
+
+      var poly = Polygon(ret).simplify();
+      var ret = poly.points.filter(function(v, i) {
+        var c = poly.point(i);
+        var n = poly.point(i+1);
+
+        if (c.point !== n.point) {
+          var isect = segseg(c, c.point, n, n.point);
+          if (isect) {
+            // this intersection point is not a valid part of the
+            // offset curve, but it is an indicator of a local problem
+            // which is fixed below
+
+            var offsetIsect = segseg(
+              poly.point(i-1),
+              c,
+              n,
+              poly.point(i+2)
+            );
+            if (offsetIsect && offsetIsect !== true) {
+              n.set(offsetIsect[0], offsetIsect[1]);
+              n.color = "purple";
+              return false;
+            } else {
+              n.invalid = true;
+            }
+            done = false;
+          } else {
+            var closest = original.closestPointTo(c);
+            var dist = Vec2.clean(c.distance(closest));
+            // console.log(dist, delta);
+            // if (dist + .0000001 < Math.abs(delta)) {
+            //   done = false;
+            //   return false;
+            // }
+          }
+        }
+
+        return !c.invalid;
+      });
+    }
 
     return Polygon(ret).simplify();
   },
@@ -463,7 +521,11 @@ Polygon.prototype = {
     var selfIntersections = this.selfIntersections();
 
     if (!selfIntersections.points.length) {
-      return [this];
+      if (this.doesIntersectPolygon(originalPolygon)) {
+        return [];
+      } else {
+        return [this];
+      }
     }
 
     var contain = function(parent, child) {
@@ -549,7 +611,6 @@ Polygon.prototype = {
     };
 
     var evenDepth = function(node) {
-      return true;
       var i = 0;
       node = node.parent;
       while (node) {
@@ -562,6 +623,7 @@ Polygon.prototype = {
 
     while (selfIntersections.length) {
       var item = selfIntersections.points.shift();
+
 
       collect(item);
 
@@ -594,15 +656,18 @@ Polygon.prototype = {
       if (collectedPoly.length > 2) {
         collectedPoly.referencePolygon = Polygon(referencePolygon)
 
-        if (
-            collectedPoly.referencePolygon.winding() === collectedPoly.winding() &&
-            !collectedPoly.doesIntersectPolygon(originalPolygon)
-        ) {
-          ret.push(collectedPoly);
+        if (collectedPoly.referencePolygon.winding() === collectedPoly.winding()) {
+          if (!collectedPoly.doesIntersectPolygon(originalPolygon)) {
+            ret.push(collectedPoly);
+          } else {
+            console.log('here', item, item.parent);
+          }
+        } else {
+          console.log('x')
         }
       }
       poly = [];
-      ref = [];
+      referencePolygon = [];
     }
 
     console.log('done', ret);
