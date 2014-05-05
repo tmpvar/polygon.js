@@ -395,7 +395,7 @@ Polygon.prototype = {
       }
 
       var b = Vec2(delta, 0).rotate(oangle);
-      for (var i = 0; i<=steps; i++) {
+      for (var i = 0; i<steps; i++) {
         collect(c.add(b.rotate(stepSize), true), c, 'green')
       }
     };
