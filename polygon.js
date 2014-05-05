@@ -27,8 +27,12 @@ var defined = function(a) {
   return typeof a !== 'undefined';
 }
 
+var clean = function(a, b) {
+  return Math.round((a-b)*10000)/10000;
+}
+
 var near = function(a, b) {
-  return Math.round((a-b)*10000)/10000 === 0;
+  return clean(a, b) === 0;
 };
 
 
@@ -329,7 +333,7 @@ Polygon.prototype = {
     };
   },
 
-  offset : function(delta) {
+  offset : function(delta, roundCorners) {
     var bisect = function(a, b) {
       var diff = a.subtract(b, true);
       var angle = toTAU(Vec2(1, 0).angleTo(diff));
@@ -337,6 +341,8 @@ Polygon.prototype = {
 
       return bisector;
     };
+
+
 
     var ret = [];
     var collect = function(a, point, type) {
@@ -357,9 +363,40 @@ Polygon.prototype = {
           if (map[a.type]) {
             a.color = map[a.type];
           } else {
-            a.color = '#F0F';
+            a.color = type;
           }
         }
+      }
+    };
+
+    var roundCorner = function(p, c, n) {
+      var v = Vec2(1, 0);
+      var oangle = v.angleTo(p.subtract(c, true))
+      var ae1 = v.angleTo(c.subtract(p, true));
+      var ae2 = v.angleTo(n.subtract(c, true))
+
+      var range = (ae2 > ae1) ? ae2-ae1 : TAU-(ae1 - ae2);
+
+      oangle += TAU/4
+
+      if (delta < 0) {
+        range = TAU - range;
+        if (range > TAU/2) {
+          return;
+        }
+      }
+
+      var steps = 10;// + Math.floor(Math.abs(delta)*.01);
+      var stepSize = range / steps;
+
+      if (delta < 0) {
+        range /= 2;
+        stepSize = -stepSize;
+      }
+
+      var b = Vec2(delta, 0).rotate(oangle);
+      for (var i = 0; i<=steps; i++) {
+        collect(c.add(b.rotate(stepSize), true), c, 'green')
       }
     };
 
@@ -384,22 +421,19 @@ Polygon.prototype = {
       var start = c.subtract(bc, true);
       var end = n.subtract(bc, true);
 
-      if (e1.angleTo(e2) <= -Math.PI * .75) {
-        collect(o, c, 'angle');
+      var angle = e1.angleTo(e2);
+
+      if ((delta < 0 && angle <= Math.PI * .25) || (delta > 0 && angle >= Math.PI * .5) ) {
+        collect(start, c, 'edge');
+        //collect(o, c, 'angle');
+        collect(end, n, 'edge');
       } else {
-
-        var isect = segseg(prevprev, prev, start, end);
-
-        if (isect) {
-          collect(Vec2.fromArray(isect), c, 'isect');
-        } else {
-          collect(start, c, 'edge'); // edge offset
-        }
+        roundCorner(p, c, n);
+        collect(end, n, 'edge');
       }
-
-      collect(end, n, 'edge'); // edge offset
-
     });
+
+
 
     // catch the cases where two adjacent bisectors intersect
     var sentinel = 100;
@@ -409,6 +443,49 @@ Polygon.prototype = {
 
       var poly = Polygon(ret).simplify();
       var ret = poly.points.filter(function(v, i) {
+
+        var p = poly.point(i-1);
+        var c = poly.point(i);
+        var n = poly.point(i+1);
+        var nn = poly.point(i+2);
+
+        var cn = segseg(p, c, n, nn);
+        if (!p.equal(c) && cn) {
+
+          c.color = "#f0f";
+          c.set(cn[0], cn[1]);
+          n.invalid = true;
+        }
+
+
+        if (segseg(p, c, n, n.point)) {
+          done = false;
+          //n.invalid = true;
+        }
+
+
+        if (segseg(c, c.point, n, n.point)) {
+
+          var offsetIsect = segseg(p,c, n, nn);
+
+          if ((!c.equal(p))) {
+            if (offsetIsect && offsetIsect!==true) {
+              console.log('yep')
+
+              done = false;
+              c.set(offsetIsect[0], offsetIsect[1]);
+              c.color = "blue";
+            }
+          }
+        }
+
+
+        return !c.invalid;
+
+      });
+
+
+/*      var ret = poly.points.filter(function(v, i) {
         var c = poly.point(i);
         var n = poly.point(i+1);
 
@@ -445,7 +522,7 @@ Polygon.prototype = {
         }
 
         return !c.invalid;
-      });
+      });*/
     }
 
     return Polygon(ret).simplify();
@@ -595,13 +672,16 @@ Polygon.prototype = {
 
     for (var i=1; i<selfIntersections.length; i++) {
       var current = selfIntersections.point(i);
-      for (var j=i; j>=0; j--) {
+      for (var j=i-1; j>=0; j--) {
         var compare = selfIntersections.point(j);
         if (contain(compare, current)) {
           node_reparent(current, compare);
           break;
         } else if (interfere(compare, current)) {
           console.error('INTERFERE');
+        } else {
+          // console.log('hrm', contain(compare, current), compare.si, compare.bi, current.si, current.bi);
+
         }
       }
     }
@@ -623,8 +703,8 @@ Polygon.prototype = {
       }
     };
 
-    var evenDepth = function(node) {
-      var i = 0;
+    var evenDepth = function(node, mod) {
+      var i = mod || 0;
       node = node.parent;
       while (node) {
         node = node.parent;
@@ -633,10 +713,9 @@ Polygon.prototype = {
       return i%2 === 0;
     }
 
-
+    var evenOffset = 0;
     while (selfIntersections.length) {
       var item = selfIntersections.points.shift();
-
 
       collect(item);
 
@@ -666,24 +745,36 @@ Polygon.prototype = {
       }
 
       var collectedPoly = Polygon(poly).simplify();
-      if (collectedPoly.length > 2) {
-        collectedPoly.referencePolygon = Polygon(referencePolygon)
 
-        if (collectedPoly.referencePolygon.winding() === collectedPoly.winding()) {
-          if (!collectedPoly.doesIntersectPolygon(originalPolygon)) {
-            ret.push(collectedPoly);
-          } else {
-            console.log('here', item, item.parent);
+      if (collectedPoly.length > 2) {
+        var referenceWinding = Polygon(referencePolygon).winding();
+
+        if (
+          evenDepth(collectedPoly.points[0], evenOffset) &&
+          referenceWinding === collectedPoly.winding() &&
+          !originalPolygon.doesIntersectPolygon(collectedPoly) &&
+          ((delta > 0 && !originalPolygon.containsPoint(collectedPoly.points[0])) || (delta < 0 && originalPolygon.containsPoint(collectedPoly.points[0])))
+        ) {
+
+          var valid = true;
+          for (var i=0; i<collectedPoly.length; i++) {
+
+            if (clean(originalPolygon.closestPointTo(collectedPoly.point(i)).distance(collectedPoly.point(i)), Math.abs(delta)) < -(Math.abs(delta/2))) {
+              evenOffset++;
+              valid = false;
+              break;
+            }
           }
-        } else {
-          console.log('x')
+
+          valid && ret.push(collectedPoly);
+
+        } else if (!ret.length) {
+          evenOffset++;
         }
       }
       poly = [];
       referencePolygon = [];
     }
-
-    console.log('done', ret);
 
     return ret;
   },
