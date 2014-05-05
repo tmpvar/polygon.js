@@ -327,7 +327,7 @@
 
         for (var i = config.inner; i<config.outer; i += config.step || 10) {
           if (i === 0) { continue; }
-          var o = p.offset(i, true);
+          var o = p.offset(i);
 
           config.simplify && o.simplify();
           config.renderPoints && renderPolyPoints(o, 'yellow', 1);
