@@ -412,7 +412,20 @@ Polygon.prototype = {
 
     var original = this;
 
-    this.rewind(false).simplify().each(function(p, c, n, i) {
+    var swap = function(a, b) {
+      var tmp = a.toArray();
+      a.set(b.x, b.y);
+      b.set(tmp[0], tmp[1]);
+    };
+
+    this.rewind(false).each(function(p, c, n, i) {
+
+      var nn = this.point(i+2);
+
+      // local self-intersection
+      if (segseg(c, p, n, nn)) {
+        swap(c, n);
+      }
 
       var e1 = c.subtract(p, true).normalize();
       var e2 = c.subtract(n, true).normalize();
@@ -424,7 +437,7 @@ Polygon.prototype = {
 
       var pc = bisect(p, c);
       var bc = bisect(c, n);
-      var nc = bisect(n, this.point(i+2));
+      var nc = bisect(n, nn);
 
       var prevprev = p.subtract(pc, true);
       var prev = c.subtract(pc, true);
@@ -432,18 +445,22 @@ Polygon.prototype = {
       var end = n.subtract(bc, true);
 
       var angle = e1.angleTo(e2);
+      var reflex = angle > 0 && angle < Math.PI;
 
-      if ((delta < 0 && angle <= Math.PI * .25) || (delta > 0 && angle >= Math.PI * .5) ) {
-        collect(start, c, 'edge');
-        //collect(o, c, 'angle');
+      //collect(o, c, 'angle');
+
+      if (reflex === delta < 0) {
+
+        roundCorner(p, c, n);
+      //   collect(o, c, 'angle');
+
         collect(end, n, 'edge');
       } else {
-        roundCorner(p, c, n);
+        collect(start, c, 'edge');
         collect(end, n, 'edge');
       }
     });
-
-
+// return Polygon(ret);
 
     // catch the cases where two adjacent bisectors intersect
     var sentinel = 100;
@@ -458,6 +475,16 @@ Polygon.prototype = {
         var c = poly.point(i);
         var n = poly.point(i+1);
         var nn = poly.point(i+2);
+        var bisectorIsect = segseg(c.point, c, n, n.point);
+        if (bisectorIsect) {
+          if (c.point !== n.point) {
+            c.set(bisectorIsect[0], bisectorIsect[1]);
+            //n.invalid = true;
+            done = false;
+            // return false;
+          }
+        }
+
 
         var cn = segseg(p, c, n, nn);
         if (!p.equal(c) && cn) {
@@ -465,8 +492,10 @@ Polygon.prototype = {
           c.color = "#f0f";
           c.set(cn[0], cn[1]);
           n.invalid = true;
+          done = false;
         }
 
+        return !c.invalid;
 
         if (segseg(p, c, n, n.point)) {
           done = false;
