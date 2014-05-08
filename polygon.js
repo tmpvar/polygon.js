@@ -343,7 +343,7 @@ Polygon.prototype = {
     };
   },
 
-  offset : function(delta, roundCorners) {
+  offset : function(delta, collectOriginal) {
     var bisect = function(a, b) {
       var diff = a.subtract(b, true);
       var angle = toTAU(Vec2(1, 0).angleTo(diff));
@@ -367,7 +367,8 @@ Polygon.prototype = {
           var map = {
             edge : 'red',
             angle: 'yellow',
-            isect: 'pink'
+            isect: 'pink',
+            join: 'green'
           };
 
           if (map[a.type]) {
@@ -379,7 +380,7 @@ Polygon.prototype = {
       }
     };
 
-    var roundCorner = function(p, c, n) {
+    var roundCorner = function(radius, steps, invert, p, c, n, collectFn) {
       var v = Vec2(1, 0);
       var oangle = v.angleTo(p.subtract(c, true))
       var ae1 = v.angleTo(c.subtract(p, true));
@@ -387,30 +388,34 @@ Polygon.prototype = {
 
       var range = (ae2 > ae1) ? ae2-ae1 : TAU-(ae1 - ae2);
 
-      oangle += TAU/4
+      // oangle += TAU/6
 
-      if (delta < 0) {
+      if ((invert && radius > 0) || (!invert && radius < 0)) {
         range = TAU - range;
         if (range > TAU/2) {
           return;
         }
       }
 
-      var steps = 10;// + Math.floor(Math.abs(delta)*.01);
+      if (invert) {
+        range = TAU/2-range;
+        oangle+=Math.PI/2
+      }
+
+      var steps = steps || 10;// + Math.floor(Math.abs(delta)*.01);
       var stepSize = range / steps;
 
-      if (delta < 0) {
+      if ((invert && radius > 0) || (!invert && radius < 0)) {
         range /= 2;
         stepSize = -stepSize;
       }
 
-      var b = Vec2(delta, 0).rotate(oangle);
+      var b = Vec2(radius, 0).rotate(oangle+range);
       for (var i = 0; i<steps; i++) {
-        collect(c.add(b.rotate(stepSize), true), c, 'green')
+        var newPoint = c.subtract(b.rotate(-stepSize), true);
+        (collectFn || collect)(newPoint, c, 'join')
       }
     };
-
-    var original = this;
 
     var swap = function(a, b) {
       var tmp = a.toArray();
@@ -418,49 +423,163 @@ Polygon.prototype = {
       b.set(tmp[0], tmp[1]);
     };
 
-    this.rewind(false).each(function(p, c, n, i) {
+    var angleBisector = function(p, c, n) {
+      var e1 = c.subtract(p, true).normalize();
+      var e2 = c.subtract(n, true).normalize();
 
-      var nn = this.point(i+2);
+      var r = delta / Math.sin(Math.acos(e1.dot(e2))/2);
+      if (Number.isFinite(r)) {
+        var d = e1.add(e2, true).normalize().multiply(r, true);
+      } else {
+        var d = Vec2(0, 0);
+      }
 
+
+      var o = e1.perpDot(e2) < 0 ? c.add(d, true) : c.subtract(d, true);
+      o.angle = e1.angleTo(e2);
+
+      return [o, c];
+    };
+
+    var edgeBisector = function(start, end) {
+      var o = bisect(start, end);
+      return [start.subtract(o, true), end.subtract(o, true)];
+    };
+
+    var segsegArrays = function(a, b) {
+      return segseg(a[0], a[1], b[0], b[1]);
+    };
+
+    var joinAngle = function(p, c, n) {
+      return c.subtract(p, true).angleTo(c.subtract(n, true));
+    };
+
+    var that = this;
+    var original = this.simplify().rewind(false).clone();
+    var sentinel = 20;
+    var done = false;
+
+    original.each(function(p, c, n, i) {
+      var nn = original.point(i+2);
       // local self-intersection
       if (segseg(c, p, n, nn)) {
         swap(c, n);
       }
 
-      var e1 = c.subtract(p, true).normalize();
-      var e2 = c.subtract(n, true).normalize();
-
-      var r = delta / Math.sin(Math.acos(e1.dot(e2))/2);
-      var d = e1.add(e2, true).normalize().multiply(r, true);
-
-      var o = e1.perpDot(e2) < 0 ? c.add(d, true) : c.subtract(d, true);
-
-      var pc = bisect(p, c);
-      var bc = bisect(c, n);
-      var nc = bisect(n, nn);
-
-      var prevprev = p.subtract(pc, true);
-      var prev = c.subtract(pc, true);
-      var start = c.subtract(bc, true);
-      var end = n.subtract(bc, true);
-
-      var angle = e1.angleTo(e2);
-      var reflex = angle > 0 && angle < Math.PI;
-
-      //collect(o, c, 'angle');
-
-      if (reflex === delta < 0) {
-
-        roundCorner(p, c, n);
-      //   collect(o, c, 'angle');
-
-        collect(end, n, 'edge');
-      } else {
-        collect(start, c, 'edge');
-        collect(end, n, 'edge');
-      }
+      c.point = that.point(i);
     });
-// return Polygon(ret);
+
+    var diameter = Math.abs(delta)*2;
+    var deltaSquared = delta*delta;
+
+    while (sentinel-- && !done) {
+      done = true;
+
+      for (var i = 0; i<original.length; i++) {
+        var pp  = original.point(i-2);
+        var p  = original.point(i-1);
+        var c  = original.point(i);
+        var n  = original.point(i+1);
+        var nn = original.point(i+2);
+
+        var ao = angleBisector(p, c, n);
+        var angleBisectorIsect = segsegArrays(angleBisector(c, n, nn), ao);
+        var d2 = Math.abs(delta) * 2;
+        var pnndiff = p.subtract(nn, true);
+
+        var dpnn = pnndiff.length();
+        var dcn = c.distance(n);
+        var dpn = p.distance(n);
+
+        if (angleBisectorIsect) {
+
+          // TODO: do the math to figure out how much of the circle is sticking into
+          //       the corner
+          if (dpnn < diameter && diameter/2 < p.distance(c)) {
+
+            var a = Vec2(1, 0).angleTo(pnndiff);
+            var loc = (Math.PI - (Math.acos((2 * deltaSquared - dpnn*dpnn)/(2 * deltaSquared))))/2;
+
+            // attempt an intersection between two tangent lines
+            var tnormal = Vec2(1, 0).rotate(a + loc + Math.PI/2);
+            var line1 = new Line2(p.x, p.y, p.x+tnormal.x, p.y+tnormal.y);
+
+            tnormal = Vec2(1, 0).rotate(a - loc - Math.PI/2);
+            var line2 = new Line2(nn.x, nn.y, nn.x-tnormal.x, nn.y-tnormal.y);
+            var tangentIsect = line1.intersect(line2);
+            if (tangentIsect) {
+
+              c.set(tangentIsect);
+              original.points.splice(i+1, 1);
+              done = false;
+              c.color = "orange";
+            } else {
+              c.color = "#f0f";
+            }
+
+          } else {
+            var tangentThrough;
+            var moveTarget;
+            var tangentIsectTarget;
+            var bisectorPoint;
+
+            if (joinAngle(p, c, n) < joinAngle(c, n, nn)) {
+              n.color = "red";
+              tangentThrough = n;
+              moveTarget = c;
+
+              bisectorPoint = ao[0];
+              tangentIsectTarget = [p, c];
+            } else {
+              c.color = "purple";
+              tangentThrough = c;
+              moveTarget = n;
+              bisectorPoint = angleBisector(p, c, n)[0];
+              tangentIsectTarget = [n,nn];
+            }
+
+            var diff = bisectorPoint.subtract(tangentThrough, true);
+
+            if (diff.lengthSquared()) {
+              var tangentLine = new Line2(
+                tangentThrough.x,
+                tangentThrough.y,
+                tangentThrough.x - diff.y,
+                tangentThrough.y + diff.x
+              );
+
+              var newPoint = tangentLine.intersect(
+                tangentIsectTarget[0].x,
+                tangentIsectTarget[0].y,
+                tangentIsectTarget[1].x,
+                tangentIsectTarget[1].y
+              );
+
+              if (newPoint) {
+                moveTarget.set(newPoint);
+                done = false;
+              } else {
+                //console.error('no tangent intersection');
+                moveTarget.color = "purple"
+              }
+            } else {
+              console.log('DIFF FAILED')
+            }
+          }
+        }
+      }
+    }
+    console.log('sentinel', sentinel);
+
+    if (!collectOriginal) {
+      original.dedupe().each(function(p, c, n) {
+        collect(angleBisector(p, c, n)[0], c, c.color || 'angle');
+      });
+
+      return Polygon(ret);
+    } else {
+      return original;
+    }
 
     // catch the cases where two adjacent bisectors intersect
     var sentinel = 100;
@@ -476,23 +595,37 @@ Polygon.prototype = {
         var n = poly.point(i+1);
         var nn = poly.point(i+2);
         var bisectorIsect = segseg(c.point, c, n, n.point);
-        if (bisectorIsect) {
-          if (c.point !== n.point) {
-            c.set(bisectorIsect[0], bisectorIsect[1]);
-            //n.invalid = true;
-            done = false;
-            // return false;
-          }
-        }
+        // if (bisectorIsect) {
+        //   if (c.point !== n.point) {
+        //     c.set(bisectorIsect[0], bisectorIsect[1]);
+        //     //n.invalid = true;
+        //     done = false;
+        //     // return false;
+        //   }
+        // }
 
 
         var cn = segseg(p, c, n, nn);
-        if (!p.equal(c) && cn) {
+        if (!p.equal(c)) {
+          if (cn) {
+            c.color = "#f0f";
+            c.set(cn[0], cn[1]);
+            n.invalid = true;
+            done = false;
+          } else if (bisectorIsect) {
 
-          c.color = "#f0f";
-          c.set(cn[0], cn[1]);
-          n.invalid = true;
-          done = false;
+            var edgeIsect = segseg(c.edges[0], c.edges[1], n.edges[0], n.edges[1]);
+            console.log(c.edges.join(','), n.edges.join(','))
+            if (edgeIsect) {
+              console.log('here');
+              c.set(edgeIsect[0], edgeIsect[1])
+            } else {
+              c.color = "orange";
+              //n.invalid = true;
+              done = false;
+              // return false;
+            }
+          }
         }
 
         return !c.invalid;

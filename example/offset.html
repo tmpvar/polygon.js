@@ -33,7 +33,9 @@
       simplify: false,
       renderSelfIntersections: true,
       pruneSelfIntersections: false,
-      renderSplitSelfIntersections : false
+      renderSplitSelfIntersections : false,
+      renderTool : false,
+      renderOriginalMutation: false
     };
 
     try {
@@ -153,6 +155,9 @@
         ctx.scale(scale, -scale);
         ctx.translate(-translate.x, translate.y);
 
+        renderPoly(p, 0, false, 3, .5);
+
+
         ctx.beginPath()
         ctx.moveTo(-5, -5);
         ctx.lineTo(5, 5);
@@ -170,9 +175,13 @@
         for (var i = config.inner; i<config.outer; i += config.step || 10) {
           if (i === 0) { continue; }
           var o = p.offset(i);
+
+          var oo = p.offset(i, true);
+          config.renderOriginalMutation && renderPoly(oo, .4);
           iterations++;
           config.simplify && o.simplify();
           config.renderPoints && renderPolyPoints(o, 'yellow', 1);
+          config.renderTool && renderPolyPoints(o, 'blue', Math.abs(i));
           config.renderPoly && renderPoly(o, .3);
           config.renderSelfIntersections && renderPolyPoints(o.selfIntersections());
 
@@ -197,9 +206,8 @@
         p.points[0].color = "#f0f";
         p.points[1].color = "#f00";
 
-        renderPoly(p, 0, false, 3, .5);
-        renderPolyPoints(p, 'orange', 1);
-        renderPolyPointLabels(p, 'white', scale);
+        //renderPolyPoints(p, 'orange', 1);
+        //renderPolyPointLabels(p, 'white', scale);
 
       ctx.restore();
 
@@ -224,6 +232,8 @@
     gui.add(config, 'renderPointAssociations', false).onChange(updateValues);
     gui.add(config, 'simplify', false).onChange(updateValues);
     gui.add(config, 'pruneSelfIntersections', false).onChange(updateValues);
+    gui.add(config, 'renderTool', false).onChange(updateValues);
+    gui.add(config, 'renderOriginalMutation', false).onChange(updateValues);
 
     window.addEventListener('keydown', function(ev) {
       switch (ev.keyCode) {
