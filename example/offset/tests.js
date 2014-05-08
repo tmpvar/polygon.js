@@ -21,6 +21,85 @@ tests.basicLocalInterference = function() {
   ]);
 };
 
+tests.basicRule = function() {
+  return new Polygon([
+    Vec2(-100, 100),
+    Vec2(-100, -100),
+    Vec2(-50, -100),
+    Vec2(-50, -200),
+    Vec2(50, -200),
+    Vec2(50, -100),
+    Vec2(100, -100),
+    Vec2(100, 100)
+  ]);
+};
+
+tests.basicRule2 = function() {
+  return new Polygon([
+    Vec2(-100, 100),
+
+    Vec2(-100, 50),
+    Vec2(-200, 50),
+    Vec2(-200, -50),
+    Vec2(-100, -50),
+
+    Vec2(-100, -100),
+    Vec2(-50, -100),
+    Vec2(-50, -200),
+    Vec2(50, -200),
+    Vec2(50, -100),
+
+    Vec2(100, -100),
+    Vec2(100, -50),
+    Vec2(200, -50),
+    Vec2(200, 50),
+    Vec2(100, 50),
+
+    Vec2(100, 100),
+    Vec2(50, 100),
+    Vec2(50, 200),
+    Vec2(-50, 200),
+    Vec2(-50, 100),
+
+  ]);
+};
+
+tests.saw = function() {
+
+  return new Polygon([
+    Vec2(-500, 100),
+    Vec2(-500, -100),
+
+    Vec2(-350, -75),
+    Vec2(-300, -75),
+    Vec2(-325, -100),
+
+    Vec2(-250, -75),
+    Vec2(-200, -75),
+    Vec2(-175, -100),
+
+    Vec2(-100, -75),
+    Vec2(-50, -75),
+    Vec2(0, -100),
+
+    Vec2(50, -75),
+    Vec2(100, -75),
+    Vec2(75, -100),
+
+
+
+    Vec2(400, -100),
+    Vec2(400, 100),
+
+
+
+
+
+  ]);
+
+};
+
+
 tests.basicLocalInterferenceMirrorX = function() {
   return this.basicLocalInterference().scale(Vec2(-1, 1), Vec2(0, 0), true);
 };
