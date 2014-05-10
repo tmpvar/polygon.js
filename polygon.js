@@ -380,7 +380,7 @@ Polygon.prototype = {
       }
     };
 
-    var roundCorner = function(radius, steps, invert, p, c, n, collectFn) {
+    var roundCorner = function(p, c, n) {
       var v = Vec2(1, 0);
       var oangle = v.angleTo(p.subtract(c, true))
       var ae1 = v.angleTo(c.subtract(p, true));
@@ -388,34 +388,30 @@ Polygon.prototype = {
 
       var range = (ae2 > ae1) ? ae2-ae1 : TAU-(ae1 - ae2);
 
-      // oangle += TAU/6
+      oangle += TAU/4
 
-      if ((invert && radius > 0) || (!invert && radius < 0)) {
+      if (delta < 0) {
         range = TAU - range;
         if (range > TAU/2) {
           return;
         }
       }
 
-      if (invert) {
-        range = TAU/2-range;
-        oangle+=Math.PI/2
-      }
-
-      var steps = steps || 10;// + Math.floor(Math.abs(delta)*.01);
+      var steps = 10;// + Math.floor(Math.abs(delta)*.01);
       var stepSize = range / steps;
 
-      if ((invert && radius > 0) || (!invert && radius < 0)) {
+      if (delta < 0) {
         range /= 2;
         stepSize = -stepSize;
       }
 
-      var b = Vec2(radius, 0).rotate(oangle+range);
-      for (var i = 0; i<steps; i++) {
-        var newPoint = c.subtract(b.rotate(-stepSize), true);
-        (collectFn || collect)(newPoint, c, 'join')
+      var b = Vec2(delta, 0).rotate(oangle);
+      for (var i = 0; i<steps-1; i++) {
+        collect(c.add(b.rotate(stepSize), true), c, 'green')
       }
     };
+
+
 
     var swap = function(a, b) {
       var tmp = a.toArray();
@@ -573,7 +569,21 @@ Polygon.prototype = {
 
     if (!collectOriginal) {
       original.dedupe().each(function(p, c, n) {
-        collect(angleBisector(p, c, n)[0], c, c.color || 'angle');
+
+        var cab = angleBisector(p, c, n)
+
+console.log('o.angle', cab[0].angle);
+
+        var angle = joinAngle(p, c, n);
+        var reflex = angle > 0 && angle < Math.PI;
+
+        //collect(o, c, 'angle');
+
+        if (reflex === delta < 0) {
+          roundCorner(p, c, n);
+        } else {
+          collect(cab[0], c, c.color || 'angle');
+        }
       });
 
       return Polygon(ret);
