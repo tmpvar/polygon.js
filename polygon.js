@@ -479,6 +479,7 @@ Polygon.prototype = {
         var nn = original.point(i+2);
 
         var ao = angleBisector(p, c, n);
+        c.angleBisector = ao[0];
         var angleBisectorIsect = segsegArrays(angleBisector(c, n, nn), ao);
         var d2 = Math.abs(delta) * 2;
         var pnndiff = p.subtract(nn, true);
