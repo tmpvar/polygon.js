@@ -449,7 +449,6 @@ Polygon.prototype = {
       }
     }
     var poly = Polygon(ret).clean();
-    console.log(poly);
     return poly;
   },
 
@@ -658,6 +657,15 @@ Polygon.prototype = {
     }
 
     return false;
+  },
+
+  toArray: function() {
+    var l = this.length;
+    var ret = Array(l);
+    for (var i=0; i<l; i++) {
+      ret[i] = this.points[i].toArray();
+    }
+    return ret;
   },
 
   toString : function() {

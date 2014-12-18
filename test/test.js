@@ -994,3 +994,16 @@ test('Polygon#contains - containment (width/height)', function(t) {
   }));
   t.end();
 });
+
+test('Polygon#toArray', function(t) {
+
+  var points = [
+    [0, 0],
+    [1, 0],
+    [1, 1]
+  ];
+
+  var out = Polygon(points).toArray();
+  t.deepEqual(out, points);
+  t.end();
+});
