@@ -3,6 +3,7 @@ if (typeof require !== 'undefined') {
   var Vec2 = require('vec2');
   var segseg = require('segseg');
   var Line2 = require('line2');
+  var polygonBoolean = require('2d-polygon-boolean');
 }
 
 var PI = Math.PI;
@@ -657,6 +658,36 @@ Polygon.prototype = {
     }
 
     return false;
+  },
+
+  union: function(other) {
+    return Polygon(
+      polygonBoolean(
+        this.toArray(),
+        other.toArray(),
+        'or'
+      )[0]
+    );
+  },
+
+  cut: function(other) {
+    return polygonBoolean(
+      this.toArray(),
+      other.toArray(),
+      'not'
+    ).map(function(r) {
+      return new Polygon(r);
+    });
+  },
+
+  intersect: function(other) {
+    return polygonBoolean(
+      this.toArray(),
+      other.toArray(),
+      'and'
+    ).map(function(r) {
+      return new Polygon(r);
+    });
   },
 
   toArray: function() {

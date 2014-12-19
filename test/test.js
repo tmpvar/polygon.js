@@ -1007,3 +1007,81 @@ test('Polygon#toArray', function(t) {
   t.deepEqual(out, points);
   t.end();
 });
+
+test('Polygon#union', function(t){
+  var result = Polygon([
+    [0, 0],
+    [2, 0],
+    [2, 2],
+    [0, 2]
+  ]).union(Polygon([
+    [1, 1],
+    [3, 1],
+    [3, 3],
+    [1, 3]
+  ]))
+
+  t.deepEqual(result.toArray(), [
+    [2, 1],
+    [2, 0],
+    [0, 0],
+    [0, 2],
+    [1, 2],
+    [1, 3],
+    [3, 3],
+    [3, 1]
+  ]);
+
+  t.end();
+})
+
+test('Polygon#cut', function(t){
+  var result = Polygon([
+    [0, 0],
+    [2, 0],
+    [2, 2],
+    [0, 2]
+  ]).cut(Polygon([
+    [1, 1],
+    [3, 1],
+    [3, 3],
+    [1, 3]
+  ]))
+
+  t.equal(result.length, 1);
+
+  t.deepEqual(result[0].toArray(), [
+    [2, 1],
+    [2, 0],
+    [0, 0],
+    [0, 2],
+    [1, 2],
+    [1, 1]
+  ]);
+  t.end();
+})
+
+test('Polygon#intersect', function(t){
+  var result = Polygon([
+    [0, 0],
+    [2, 0],
+    [2, 2],
+    [0, 2]
+  ]).intersect(Polygon([
+    [1, 1],
+    [3, 1],
+    [3, 3],
+    [1, 3]
+  ]))
+
+  t.equal(result.length, 1);
+
+  t.deepEqual(result[0].toArray(), [
+    [2, 1],
+    [2, 2],
+    [1, 2],
+    [1, 1]
+  ]);
+
+  t.end();
+})
