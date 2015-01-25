@@ -87,6 +87,24 @@ test('Polygon#each - allow exiting early', function(t) {
   t.end();
 });
 
+test('Polygon#insert - allow exiting early', function(t) {
+  var p = new Polygon([
+    Vec2(1,2),
+    Vec2(100,200),
+    Vec2(0,200)
+  ]);
+
+  p.insert(Vec2(50, 50), 1);
+
+  t.deepEqual(p.toArray(), [
+    [1, 2],
+    [50, 50],
+    [100, 200],
+    [0, 200]
+  ]);
+
+  t.end();
+});
 
 test('Polygon#area - compute the area of a triangle', function(t) {
   var p = new Polygon([
@@ -303,6 +321,24 @@ test('Polygon#remove - return this', function(t) {
   ]);
 
   t.ok(p === p.remove(p.point(0)));
+  t.end();
+});
+
+
+test('Polygon#remove - allow numeric index', function(t) {
+  var p = new Polygon([
+    Vec2(1,2),
+    Vec2(100,200),
+    Vec2(0,200)
+  ]);
+
+  p.remove(1);
+
+  t.deepEqual(p.toArray(), [
+    [1, 2],
+    [0, 200]
+  ]);
+
   t.end();
 });
 

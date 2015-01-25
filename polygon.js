@@ -67,6 +67,10 @@ Polygon.prototype = {
     return this;
   },
 
+  insert : function (vec, index) {
+    this.points.splice(index, 0, vec);
+  },
+
   point : function(idx) {
     var el = idx%(this.points.length);
     if (el<0) {
@@ -96,9 +100,13 @@ Polygon.prototype = {
   },
 
   remove : function(vec) {
-    this.points = this.points.filter(function(point) {
-      return point!==vec;
-    });
+    if (typeof vec === 'number') {
+      this.points.splice(vec, 1);
+    } else {
+      this.points = this.points.filter(function(point) {
+        return point!==vec;
+      });
+    }
     return this;
   },
 

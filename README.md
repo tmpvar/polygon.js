@@ -28,7 +28,8 @@ You can pass an array of `Vec2`s, arrays `[x, y]`, or objects `{ x: 10, y: 20 }`
 * `each(function(prev, current, next, idx) {})`
 * `point(idx)` - returns the point at index `idx`. note: this will wrap in both directions
 * `dedupe(returnNew)` - ensure all of the points are unique
-* `remove(vec2)` - remove the specified `vec2` from this polygon
+* `insert(vec2, index)` - insert `vec2` at the specified index
+* `remove(vecOrIndex)` - remove the specified `vec2` or numeric index from this polygon
 * `clean(returnNew)` - removes contiguous points that are the same
 * `winding()` - returns the direction in which a polygon is wound (true === clockwise)
 * `rewind(bool)` - rewinds the polygon in the specified direction (true === clockwise)
@@ -50,6 +51,9 @@ You can pass an array of `Vec2`s, arrays `[x, y]`, or objects `{ x: 10, y: 20 }`
 * `rotate(vec2, returnNew)` - translate by `vec2` and return a clone if `returnNew` is specified
 * `equal(poly)` - return true if this polygon has the same components and the incoming `poly`
 * `contains(thing)` - works with an array of vec2's, an object containing a `.position` and `.radius`, an object populated with x1,y1,x2,y2, an object populated with x,y,w,h, and an object populated with x,y,width,height.  See the tests for more info
+* `union(polygon)` returns a new polygon representing the boolean union of `this` and the incoming `polygon`
+* `cut(polygon)` returns a new polygon representing the boolean cut of `polygon` from `this`
+* `toArray()` convert this polygon into an array of arrays (`[[x, y]]`)
 
 ## license
 
