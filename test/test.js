@@ -817,7 +817,35 @@ test('Polygon#translate - return a new polygon if specified', function(t) {
   t.end();
 });
 
-test('Polygon#selfIntersections - returns an polygon', function(t) {
+test('Polygon#selfIntersections - no intersections', function(t) {
+  var p = Polygon([
+    Vec2(0, 0),
+    Vec2(0, 10),
+    Vec2(10, 10),
+    Vec2(10, 0),
+  ]);
+
+  var isects = p.selfIntersections();
+  t.equal(isects.length, 0, 'no intersections');
+  t.end();
+});
+
+test('Polygon#selfIntersections - no intersections', function(t) {
+  var p = Polygon([
+    Vec2(0, 0),
+    Vec2(10, 10),
+    Vec2(0, 10),
+    Vec2(10, 0),
+  ]);
+
+  var isects = p.selfIntersections();
+  t.deepEqual(isects, {
+    points: [ { x: 5, y: 5, s: 0.5, b: 2.5, si: 0, bi: 2 } ]
+  }, 'single intersection');
+  t.end();
+});
+
+test('Polygon#selfIntersections - returns a polygon', function(t) {
   var p = Polygon([
     Vec2(-10, 0),
     Vec2(10, 0),
@@ -830,7 +858,8 @@ test('Polygon#selfIntersections - returns an polygon', function(t) {
   ]);
 
   var isects = p.selfIntersections();
-  t.equal(4, isects.length);
+
+  t.equal(2, isects.length);
   t.ok(isects.point(0).equal(Vec2(1, 0)));
   t.ok(isects.point(1).equal(Vec2(-1, 0)));
   t.end();

@@ -4,6 +4,7 @@ if (typeof require !== 'undefined') {
   var segseg = require('segseg');
   var Line2 = require('line2');
   var polygonBoolean = require('2d-polygon-boolean');
+  var selfIntersections = require('2d-polygon-self-intersections');
 }
 
 var PI = Math.PI;
@@ -425,40 +426,23 @@ Polygon.prototype = {
   },
 
   selfIntersections : function() {
-    var ret = [];
-    var poly = this;
-    var l = this.points.length+1;
-    // TODO: use a faster algorithm. Bentley–Ottmann is a good first choice
-    for (var i = 0; i<=l+1; i++) {
-      var s = this.point(i);
-      var e = this.point(i+1);
+    var points = [];
 
-      for (var i2 = i-2; i2<=l+1; i2++) {
-        var s2 = this.point(i2);
-        var e2 = this.point(i2+1);
+    selfIntersections(this.points, function(isect, i, s, e, i2, s2, e2, unique) {
+      if (!unique) return;
+      var v = Vec2.fromArray(isect);
+      points.push(v);
 
-        if (!s2.equal(e) && !s2.equal(s) && !e2.equal(s) && !e2.equal(e)) {
-          var isect = segseg(s, e, s2, e2);
+      v.s = i + (s.subtract(v, true).length() / s.subtract(e, true).length())
+      v.b = i2 + (s2.subtract(v, true).length() / s2.subtract(e2, true).length())
+      v.si = i;
+      v.bi = i2;
 
-          // self-intersection
-          if (isect && isect !== true) {
-            var vec = Vec2.fromArray(isect);
-            // TODO: wow, this is inneficient but is crucial for creating the
-            //       tree later on.
-            vec.s = i + (s.subtract(vec, true).length() / s.subtract(e, true).length())
-            vec.b = i2 + (s2.subtract(vec, true).length() / s2.subtract(e2, true).length())
-            vec.si = i;
-            vec.bi = i2;
+      // don't create extra garbage for no reason
+      return false;
+    });
 
-            vec.color = "red";
-            vec.radius = 5;
-            ret.push(vec);
-          }
-        }
-      }
-    }
-    var poly = Polygon(ret).clean();
-    return poly;
+    return Polygon(points);
   },
 
   pruneSelfIntersections : function() {
