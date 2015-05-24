@@ -1,4 +1,5 @@
-var tests = {};
+var Vec2 = require('vec2');
+var tests = module.exports = {};
 
 tests.square = function() {
   return new Polygon([

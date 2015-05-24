@@ -16,10 +16,11 @@
     "vec2": "^1.6.0"
   },
   "devDependencies": {
+    "dat-gui": "^0.5.0",
     "fc": "^0.1.5",
     "onecolor": "^2.4.0",
-    "tape": "~3.0.3",
-    "tap-spec": "~2.1.2"
+    "tap-spec": "~2.1.2",
+    "tape": "~3.0.3"
   },
   "scripts": {
     "test": "tape test/test.js | tap-spec"

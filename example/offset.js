@@ -3,47 +3,50 @@ console.log(one);
 var Polygon = require('../polygon');
 var Vec2 = require('vec2');
 var fc = require('fc');
+var tests = require('./offset/tests')
+var dat = require('dat-gui');
+
 
 var hsl = function(h,s,l) {
   return new one.HSL(h, s, l).hex();
 };
 
-var p = new Polygon([
+var config = {
+  inner: -200,
+  outer: -50,
+  step: 10,
+  renderPoly: false,
+  renderPoints: false,
+  renderPointAssociations : false,
+  simplify: false,
+  renderSelfIntersections: true,
+  pruneSelfIntersections: false,
+  renderSplitSelfIntersections : false,
+  renderTool : false,
+  renderOriginalMutation: false
+};
 
+try {
+  obj = JSON.parse(window.localStorage.getItem('offset-data') || '{}') || {};
+  Object.keys(obj).forEach(function(k) {
+    config[k] = obj[k];
+  });
+} catch (e) {
+  throw e;
+}
 
-  Vec2(-100, -100),
-  Vec2(100, -100),
-  Vec2(200, -200),
-  Vec2(100, 0),
+var currentTest = window.localStorage.getItem('currentTest') || 0;
 
+var testKeys = Object.keys(tests);
+console.log(testKeys)
+var testsLength = testKeys.length;
+var p = tests[testKeys[currentTest]]();
 
-  Vec2(300, 0),
-  Vec2(350, -100),
-  Vec2(350, -200),
-  Vec2(275, -300),
-  Vec2(600, -300),
-
-  Vec2(400, -200),
-  Vec2(400, -150),
-
-
-  Vec2(600, -100),
-  Vec2(500, 200),
-  Vec2(300, 100),
-
-
-  Vec2(100, 200),
-  Vec2(-100, 100),
-  Vec2(-100, 0)
-]);
-
-
-var renderPoly = function(polygons, angle, dashed, width) {
+var renderPoly = function(polygons, angle, dashed, width, alpha) {
 
   var a = Array.isArray(polygons) ? polygons : [polygons];
 
   a.forEach(function(poly) {
-    poly.simplify && poly.simplify();
 
     if (!poly.points.length || !poly.point(0)) {
       return;
@@ -51,30 +54,30 @@ var renderPoly = function(polygons, angle, dashed, width) {
 
     ctx.beginPath();
       ctx.moveTo(poly.point(0).x, poly.point(0).y);
-      poly.each(function(l, c) {
+      poly.points.forEach(function(c) {
         ctx.lineTo(c.x, c.y);
       });
     var origWidth = ctx.lineWidth;
     ctx.closePath();
     ctx.lineWidth = width || 1;
-
-    ctx.strokeStyle = hsl(angle, .75, .65);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = hsl(angle, .75, .65, alpha);
     ctx.stroke();
     ctx.lineWidth = origWidth;
 
-    ctx.strokeStyle =  hsl(angle, 1, .65);
-    poly.each(function(l, c) {
+    ctx.strokeStyle =  hsl(angle, 1, .65, alpha);
+    poly.points.forEach(function(c) {
       ctx.beginPath();
-        ctx.arc(c.x, c.y, (c.radius || .5), Math.PI*2, false);
         var orig = ctx.strokeStyle;
 
         if (c.color) {
+          config.renderPoints && ctx.arc(c.x, c.y, (c.radius || .5), Math.PI*2, false);
           ctx.strokeStyle = c.color;
+          ctx.stroke();
         }
 
-        ctx.stroke();
-
-      if (c.point && dashed !== false) {
+      if (c.point && config.renderPointAssociations && dashed !== false) {
         dashedLine(ctx, c, c.point, 4);
         ctx.stroke();
       }
@@ -84,6 +87,26 @@ var renderPoly = function(polygons, angle, dashed, width) {
   });
 };
 
+var renderPolyPoints = function(polygon, color, radius) {
+  polygon.points.forEach(function(point) {
+    ctx.beginPath();
+      ctx.arc(point.x, point.y, point.radius || radius || 5, Math.PI*2, false);
+      ctx.strokeStyle = color || 'red';
+      ctx.stroke();
+  });
+};
+
+var renderPolyPointLabels = function(polygon, color, scale) {
+  polygon.points.forEach(function(point, i) {
+    ctx.font= scale/4 + "px monospace";
+    ctx.fillStyle = color;
+    ctx.save()
+      ctx.translate(point.x-20, point.y)
+      ctx.scale(1, -1);
+      ctx.fillText(''+i, 0, 0);
+    ctx.restore();
+  });
+};
 
 var dashedLine = function (ctx, start, end, dashLen) {
   ctx.beginPath();
@@ -97,26 +120,32 @@ var dashedLine = function (ctx, start, end, dashLen) {
   var dashY = dY / dashes;
 
   var q = 0;
+  var sx = start.x;
+  var sy = start.y;
   while (q++ < dashes) {
-    start.x += dashX;
-    start.y += dashY;
-    ctx[q % 2 == 0 ? 'moveTo' : 'lineTo'](start.x, start.y);
+    sx += dashX;
+    sy += dashY;
+    ctx[q % 2 == 0 ? 'moveTo' : 'lineTo'](sx, sy);
   }
-  ctx[q % 2 == 0 ? 'moveTo' : 'lineTo'](start.x, start.y);
+  ctx[q % 2 == 0 ? 'moveTo' : 'lineTo'](sx, sy);
 };
 
-
-
 var ctx = fc(function() {
+  var start = Date.now();
+
   var w = ctx.canvas.width;
   var h = ctx.canvas.height;
-
+  ctx.strokeStyle = "red";
   ctx.fillStyle = '#111115';
   ctx.fillRect(0, 0, w, h);
 
   ctx.save();
-    ctx.translate(w/2 - 200, h/2 - 200);
-    ctx.scale(1, -1);
+    ctx.translate(w/2, h/2);
+    ctx.scale(scale, -scale);
+    ctx.translate(-translate.x, translate.y);
+
+    renderPoly(p, 0, false, 3, .5);
+
 
     ctx.beginPath()
     ctx.moveTo(-5, -5);
@@ -131,77 +160,123 @@ var ctx = fc(function() {
     ctx.closePath();
     ctx.strokeStyle = "blue"
     ctx.stroke();
+    var iterations = 0;
+    for (var i = config.inner; i<config.outer; i += config.step || 10) {
+      if (i === 0) { continue; }
+      var o = p.offset(i);
 
-    if (0) {
-      // TODO: when you bump this up past 200 we start seeing issues
-      //       I think we need to cap the ends of really long lines
-      //       and completely implement pruneSelfIntersections
+      var oo = p.offset(i, true);
+      config.renderOriginalMutation && renderPoly(oo, .4);
+      iterations++;
+      config.simplify && o.simplify();
+      config.renderPoints && renderPolyPoints(o, 'yellow', 1);
+      config.renderTool && renderPolyPoints(o, 'blue', Math.abs(i));
+      config.renderPoly && renderPoly(o, .3);
+      config.renderSelfIntersections && renderPolyPoints(o.selfIntersections());
 
-      for (var i=10; i<100; i+=1) {
-        renderPoly(p.offset(i).simplify().pruneSelfIntersections(), i*.002, false);
-      }
+      if (config.pruneSelfIntersections) {
 
-      renderPoly(p.offset(10), .5);
-      renderPoly(p.offset(5), .5);
-      renderPoly(p.offset(20), .7);
-
-      for (var i = -10; i>-100; i -= 10) {
-        var offset = p.offset(i, true);
-        var pruned = offset.clone().simplify().pruneSelfIntersections();
-        if (pruned.length) {
-          pruned.forEach(function(poly, j) {
-            renderPoly(poly, i*.001 + j * .0001, false)
-          });
-        } else {
-          renderPoly(offset, i*.001 , false);
-        }
-      }
-    } else {
-      var offset = p.offset(80, true);
-      for (var i = -60; i<-50; i += 10) {
-        if (i === 0) { continue; }
-        var o = p.offset(i, true).simplify();
-        var selfi = o.pruneSelfIntersections()
+        var selfi = o.pruneSelfIntersections();
 
         selfi.forEach(function(s, j) {
-          renderPoly(selfi, i/100 - j/selfi.length, false);
-        })
-
-        // if (!selfi.length || (selfi.length === 1 && selfi[0].points.length === 1)) {
-        //   console.log('here');
-        //   renderPoly(o, .4, false);
-        // } else {
-        //   if (selfi.length === 1) {
-        //          console.log(selfi);
-        //   }
-        //   renderPoly(selfi, i/200);
-        // }
+          renderPoly(s, i/(config.outer - config.inner), false);
+        });
       }
 
-      // var delta = -90;
+      if (config.renderSplitSelfIntersections) {
+        var parts = o.splitSelfIntersections(i, p);
+        parts.forEach(function(s, j) {
+          renderPoly(s, i/(config.outer - config.inner) + j/parts.length, false);
+        });
+      }
 
-      // renderPoly(p.offset(delta, true), .01)
-
-      // var isects = p.offset(delta, true).simplify().selfIntersections();
-      // isects.points.forEach(function(point) {
-      //   point.color = "red";
-      //   point.radius = 5;
-      // });
-
-      // renderPoly(p.offset(delta, true).simplify().pruneSelfIntersections(), .6)
-      // //renderPoly(o.simplify().pruneSelfIntersections(), .2)
-      // //renderPoly(offset.simplify().pruneSelfIntersections(), .2);
     }
 
-    renderPoly(p, 0, false, 3);
+    p.points[0].color = "#f0f";
+    p.points[1].color = "#f00";
 
-    // renderPoly(p.offset(-60, true).pruneSelfIntersections()[0], .2);
-
-
-    // for (var i = -10; i>-100; i -= 10) {
-    //   renderPoly(p.offset(i, true), .2);
-    // }
+    //renderPolyPoints(p, 'orange', 1);
+    //renderPolyPointLabels(p, 'white', scale);
 
   ctx.restore();
 
+  console.warn('runtime', iterations + ' @ ' + (Date.now() - start) + 'ms');
+
 }, false);
+
+var gui = new dat.GUI({ });
+var updateValues = function() {
+  console.clear();
+  window.localStorage.setItem('offset-data', JSON.stringify(config));
+  ctx.dirty();
+};
+
+gui.add(config, 'inner', -200, 500).onChange(updateValues);
+gui.add(config, 'outer', -200, 500).onChange(updateValues);
+gui.add(config, 'step', 1, 200).onChange(updateValues);
+gui.add(config, 'renderSelfIntersections', false).onChange(updateValues);
+gui.add(config, 'renderSplitSelfIntersections', false).onChange(updateValues);
+gui.add(config, 'renderPoly', false).onChange(updateValues);
+gui.add(config, 'renderPoints', false).onChange(updateValues);
+gui.add(config, 'renderPointAssociations', false).onChange(updateValues);
+gui.add(config, 'simplify', false).onChange(updateValues);
+gui.add(config, 'pruneSelfIntersections', false).onChange(updateValues);
+gui.add(config, 'renderTool', false).onChange(updateValues);
+gui.add(config, 'renderOriginalMutation', false).onChange(updateValues);
+
+window.addEventListener('keydown', function(ev) {
+  switch (ev.keyCode) {
+    case 39:
+      currentTest = (currentTest + 1) % testsLength;
+      p = tests[testKeys[currentTest]]();
+      ctx.dirty();
+    break;
+    case 37:
+      currentTest = currentTest - 1;
+      if (currentTest < 0) {
+        currentTest = testsLength-1;
+      }
+      p = tests[testKeys[currentTest]]();
+      ctx.dirty();
+    break;
+  }
+  window.localStorage.setItem('currentTest', currentTest);
+});
+
+var scale = parseFloat(window.localStorage.getItem('scale')) || 1;
+var translate = Vec2.fromArray(
+  (window.localStorage.getItem('translate') || '').split(',').map(function(i) {
+    var val = parseFloat(i.trim());
+    return !isNaN(val) ? val : 0;
+  })
+);
+
+ctx.canvas.addEventListener('mousewheel', function(ev) {
+  scale += ev.wheelDelta * .001 * scale;
+  if (scale < 0) {
+    scale = 0.1;
+  }
+  window.localStorage.setItem('scale', scale);
+
+  ctx.dirty();
+  ev.preventDefault();
+});
+
+var down = 0;
+
+var mouse = Vec2(0, 0);
+ctx.canvas.addEventListener('mousedown', function(e) { down = Vec2(e.clientX, e.clientY); });
+ctx.canvas.addEventListener('mouseup', function() { down = false; });
+ctx.canvas.addEventListener('mousemove', function(e) {
+  mouse.set(e.clientX, e.clientY)
+  if (down) {
+    var newDown = Vec2(e.clientX, e.clientY);
+    var d = newDown.subtract(down, true);
+    translate.subtract(d.divide(scale));
+
+    window.localStorage.setItem('translate', translate.toArray().join(','));
+
+    down = newDown;
+    ctx.dirty();
+  }
+});
