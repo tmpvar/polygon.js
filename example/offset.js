@@ -1,11 +1,10 @@
 var one = require('onecolor');
-console.log(one);
 var Polygon = require('../polygon');
 var Vec2 = require('vec2');
 var fc = require('fc');
 var tests = require('./offset/tests')
 var dat = require('dat-gui');
-
+var dashedLine = require('ctx-dashed-line');
 
 var hsl = function(h,s,l) {
   return new one.HSL(h, s, l).hex();
@@ -108,27 +107,7 @@ var renderPolyPointLabels = function(polygon, color, scale) {
   });
 };
 
-var dashedLine = function (ctx, start, end, dashLen) {
-  ctx.beginPath();
-  if (dashLen == undefined) dashLen = 2;
-  ctx.moveTo(start.x, start.y);
 
-  var dX = end.x - start.x;
-  var dY = end.y - start.y;
-  var dashes = Math.floor(Math.sqrt(dX * dX + dY * dY) / dashLen);
-  var dashX = dX / dashes;
-  var dashY = dY / dashes;
-
-  var q = 0;
-  var sx = start.x;
-  var sy = start.y;
-  while (q++ < dashes) {
-    sx += dashX;
-    sy += dashY;
-    ctx[q % 2 == 0 ? 'moveTo' : 'lineTo'](sx, sy);
-  }
-  ctx[q % 2 == 0 ? 'moveTo' : 'lineTo'](sx, sy);
-};
 
 var ctx = fc(function() {
   var start = Date.now();
