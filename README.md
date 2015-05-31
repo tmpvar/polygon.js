@@ -48,7 +48,7 @@ You can pass an array of `Vec2`s, arrays `[x, y]`, or objects `{ x: 10, y: 20 }`
 * `length` - returns the number of points in this polygon
 * `clone` - return a new instance of this polygon
 * `rotate(rads, vec2, returnNew)` - rotate by origin `vec2` (default `this.center()`) by radians `rads` and return a clone if `returnNew` is specified
-* `rotate(vec2, returnNew)` - translate by `vec2` and return a clone if `returnNew` is specified
+* `translate(vec2, returnNew)` - translate by `vec2` and return a clone if `returnNew` is specified
 * `equal(poly)` - return true if this polygon has the same components and the incoming `poly`
 * `contains(thing)` - works with an array of vec2's, an object containing a `.position` and `.radius`, an object populated with x1,y1,x2,y2, an object populated with x,y,w,h, and an object populated with x,y,width,height.  See the tests for more info
 * `union(polygon)` returns a new polygon representing the boolean union of `this` and the incoming `polygon`
