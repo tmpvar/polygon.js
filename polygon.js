@@ -203,6 +203,12 @@ Polygon.prototype = {
 
       var a = this.point(i-1);
       var b = this.point(i);
+
+      // handle closed loops
+      if (a.equal(b)) {
+        continue;
+      }
+
       var ab = b.subtract(a, true);
       var veca = vec.subtract(a, true);
       var vecadot = veca.dot(ab);
