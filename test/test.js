@@ -1150,3 +1150,21 @@ test('Polygon#intersect', function(t){
 
   t.end();
 })
+
+
+test('issue 6 (NaN)', function(t) {
+  var point = Vec2(10, 10);
+  var pol = Polygon([
+    [1,1],
+    [5,1],
+    [5,5],
+    [1,5],
+    [1,1]
+  ]);
+  var r = pol.closestPointTo(point);
+
+  t.equal(r.x, 5, 'x matches');
+  t.equal(r.y, 5, 'y matches');
+
+  t.end();
+})
