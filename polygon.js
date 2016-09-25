@@ -265,6 +265,18 @@ Polygon.prototype = {
 
     return obj;
   },
+  
+  flipX : function() {
+      this.each(function(prev, current, next) {
+          current.x *= -1;
+      });
+  },
+
+  flipY : function() {
+      this.each(function(prev, current, next) {
+          current.y *= -1;
+      });
+  },
 
   containsPoint : function(point) {
     var c = false;
